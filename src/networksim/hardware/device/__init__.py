@@ -16,7 +16,7 @@ class Device:
         self.connection_states = defaultdict(lambda: False)
 
         for x in range(1, port_count + 1):
-            self.add_port(HWID(self.base_MAC + int.to_bytes(x)))
+            self.add_port(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
 
     def add_port(self, hwid: Optional[HWID] = None):
         self.ports.append(Port(hwid))

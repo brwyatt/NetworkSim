@@ -10,18 +10,18 @@ logger = logging.getLogger(__name__)
 class HWID:
     length_bytes = 6
 
-    def __init__(self, bytes: Optional[bytes] = None):
-        self.bytes = bytes
+    def __init__(self, byte_value: Optional[bytes] = None):
+        self.byte_value = byte_value
 
     @property
-    def bytes(self):
+    def byte_value(self):
         return self._bytes
 
-    @bytes.setter
-    def bytes(self, value: Optional[bytes]):
+    @byte_value.setter
+    def byte_value(self, value: Optional[bytes]):
         if value is None:
             # Don't accidentally create a broadcast address randomly
-            while value is None or value == self.broadcast().bytes:
+            while value is None or value == self.broadcast().byte_value:
                 value = randbytes(self.length_bytes)
         elif type(value) is not bytes:
             raise TypeError(
@@ -39,16 +39,16 @@ class HWID:
         self._bytes = value
 
     def __str__(self):
-        return ":".join(format(x, "02x") for x in self.bytes)
+        return ":".join(format(x, "02x") for x in self.byte_value)
 
     @classmethod
     def broadcast(cls):
         if not hasattr(cls, "_broadcast"):
-            cls._broadcast = cls(int.to_bytes(255) * cls.length_bytes)
+            cls._broadcast = cls(int.to_bytes(255, 1, "big") * cls.length_bytes)
         return cls._broadcast
 
     def __eq__(self, other):
-        return self.bytes == other.bytes
+        return self.byte_value == other.byte_value
 
     def __hash__(self):
-        return int.from_bytes(self.bytes)
+        return int.from_bytes(self.byte_value, "big")
