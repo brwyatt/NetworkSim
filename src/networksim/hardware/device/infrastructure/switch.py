@@ -1,5 +1,3 @@
-from collections import defaultdict
-from random import randbytes
 from typing import List
 
 from networksim.hardware.device import Device
@@ -54,13 +52,8 @@ class CAMTable:
 
 class Switch(Device):
     def __init__(self, port_count: int = 4, cam_expire: int = 5):
+        super().__init__(port_count=port_count)
         self.CAM = CAMTable(expiration=cam_expire)
-        self.base_MAC = randbytes(5)
-        self.ports = [
-            Port(HWID(self.base_MAC + int.to_bytes(x)))
-            for x in range(1, port_count + 1)
-        ]
-        self.connection_states = defaultdict(lambda: False)
 
     def step(self):
         self.CAM.expire()
