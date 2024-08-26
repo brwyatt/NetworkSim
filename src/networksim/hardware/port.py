@@ -108,3 +108,6 @@ class Port:
     def disconnect(self):
         self.outbound_flush()
         self.connected = False
+
+    def __hash__(self):
+        return self.hwid.__hash__()

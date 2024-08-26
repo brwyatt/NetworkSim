@@ -48,3 +48,6 @@ class HWID:
 
     def __eq__(self, other):
         return self.bytes == other.bytes
+
+    def __hash__(self):
+        return int.from_bytes(self.bytes)
