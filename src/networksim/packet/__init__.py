@@ -15,3 +15,6 @@ class Packet:
             logger.error(f"dst: expected `HWID` got `{type(HWID)}`")
         self.dst = dst
         self.payload = payload
+
+    def __str__(self):
+        return f'{self.src} -> {self.dst} = "{self.payload}"'
