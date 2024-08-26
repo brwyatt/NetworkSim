@@ -6,7 +6,7 @@ from networksim.hwid import HWID
 
 
 class CAMEntry:
-    def __init__(self, hwid: HWID, port: Port, expiration: int = 5):
+    def __init__(self, hwid: HWID, port: Port, expiration: int = 100):
         self.hwid = hwid
         self.port = port
         self.expiration = expiration
@@ -16,7 +16,7 @@ class CAMEntry:
 
 
 class CAMTable:
-    def __init__(self, expiration: int = 5):
+    def __init__(self, expiration: int = 100):
         self.table = {}
         self.expiration = expiration
 
@@ -53,7 +53,7 @@ class CAMTable:
 
 
 class Switch(Device):
-    def __init__(self, port_count: int = 4, cam_expire: int = 5):
+    def __init__(self, port_count: int = 4, cam_expire: int = 100):
         super().__init__(port_count=port_count)
         self.CAM = CAMTable(expiration=cam_expire)
 
