@@ -24,8 +24,8 @@ class Cable:
         if port is None:
             self._a = None
         elif port and type(port) is Port:
-            self._a = port
             port.connect()
+            self._a = port
 
         self.flush()
 
@@ -41,8 +41,8 @@ class Cable:
         if port is None:
             self._b = None
         elif port and type(port) is Port:
-            self._b = port
             port.connect()
+            self._b = port
 
         self.flush()
 

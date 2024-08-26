@@ -11,6 +11,10 @@ from networksim.packet import Packet
 logger = logging.getLogger(__name__)
 
 
+class AlreadyConnectedException(Exception):
+    pass
+
+
 class Port:
     def __init__(self, hwid: Optional[HWID] = None, queue_length: int = 3):
         self.connected = False
@@ -97,6 +101,8 @@ class Port:
         return self.inbound_read()
 
     def connect(self):
+        if self.connected:
+            raise AlreadyConnectedException()
         self.connected = True
 
     def disconnect(self):
