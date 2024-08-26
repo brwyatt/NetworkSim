@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from networksim.hardware.device import Device
 from networksim.hardware.port import Port
@@ -53,8 +53,13 @@ class CAMTable:
 
 
 class Switch(Device):
-    def __init__(self, port_count: int = 4, cam_expire: int = 100):
-        super().__init__(port_count=port_count)
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        port_count: int = 4,
+        cam_expire: int = 100,
+    ):
+        super().__init__(name=name, port_count=port_count)
         self.CAM = CAMTable(expiration=cam_expire)
 
     def step(self):
