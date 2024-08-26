@@ -1,6 +1,7 @@
 import logging
-from random import randbytes
 from typing import Optional
+
+from networksim.helpers import randbytes
 
 
 logger = logging.getLogger(__name__)

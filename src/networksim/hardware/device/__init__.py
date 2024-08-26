@@ -1,8 +1,8 @@
 from collections import defaultdict
-from random import randbytes
 from typing import Optional
 
 from networksim.hardware.port import Port
+from networksim.helpers import randbytes
 from networksim.hwid import HWID
 
 
