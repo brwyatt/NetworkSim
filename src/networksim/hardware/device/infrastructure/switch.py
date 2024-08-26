@@ -9,7 +9,7 @@ class CAMEntry:
     def __init__(self, hwid: HWID, port: Port, expiration: int = 5):
         self.hwid = hwid
         self.port = port
-        self.expiration = 5
+        self.expiration = expiration
 
     def __eq__(self, other):
         return (self.hwid == other.hwid) and (self.port == other.port)
@@ -34,7 +34,9 @@ class CAMTable:
         return [x.hwid for x in self.table.values() if x.port == port]
 
     def expire(self):
-        for hwid in self.table.keys():
+        for hwid in list(self.table.keys()):
+            if hwid not in self.table:
+                continue
             self.table[hwid].expiration -= 1
             if self.table[hwid].expiration <= 0:
                 self.delete_hwid(hwid)
