@@ -14,7 +14,7 @@ class Simulation:
             x.step()
 
     def show(self):
-        print("DEVICES:")
+        print("DEVICES (queue in | queue out):")
         for device in self.devices:
             print(f" * {device.name}:")
             for x in range(0, len(device.ports)):
@@ -22,7 +22,7 @@ class Simulation:
                     f"   * Port {x}: {device.ports[x].inbound_queue.qsize()} | {device.ports[x].outbound_queue.qsize()}",
                 )
 
-        print("CABLES:")
+        print("CABLES (a->b | b->a):")
         for cable in self.cables:
             print(
                 f" * {cable.a.hwid}/{cable.b.hwid}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
