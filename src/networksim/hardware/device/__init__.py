@@ -11,13 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 class Device:
-    def __init__(self, name: Optional[str] = None, port_count: int = 1):
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        port_count: int = 1,
+        auto_process: bool = False,
+    ):
         self.base_MAC = randbytes(5)
         if name is None:
             name = f"{type(self).__name__}-{self.base_MAC.hex()}"
         self.name = name
         self.ports = []
         self.connection_states = defaultdict(lambda: False)
+        self.auto_process = auto_process
 
         for x in range(1, port_count + 1):
             self.add_port(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
@@ -28,7 +34,7 @@ class Device:
     def process_payload(self, payload):
         logger.info(payload)
 
-    def step(self):
+    def process_inputs(self):
         for port in self.ports:
             packet = port.receive()
             if packet is not None:
@@ -42,6 +48,10 @@ class Device:
                     f"packet from {packet.src}"
                 )
                 self.process_payload(packet.payload)
+
+    def step(self):
+        if self.auto_process:
+            self.process_inputs()
 
     def __getitem__(self, index):
         return self.ports[index]

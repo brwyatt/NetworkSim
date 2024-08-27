@@ -59,10 +59,10 @@ class Switch(Device):
         port_count: int = 4,
         cam_expire: int = 100,
     ):
-        super().__init__(name=name, port_count=port_count)
+        super().__init__(name=name, port_count=port_count, auto_process=True)
         self.CAM = CAMTable(expiration=cam_expire)
 
-    def step(self):
+    def process_inputs(self):
         self.CAM.expire()
         for port in self.ports:
             if self.connection_states[port] != port.connected:
