@@ -23,3 +23,9 @@ class Device:
 
     def step(self):
         pass
+
+    def __getitem__(self, index):
+        return self.ports[index]
+
+    def port_id(self, port: Port):
+        return self.ports.index(port)

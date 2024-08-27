@@ -19,7 +19,7 @@ class Simulation:
             print(f" * {device.name}:")
             for x in range(0, len(device.ports)):
                 print(
-                    f"   * Port {x}: {device.ports[x].inbound_queue.qsize()} | {device.ports[x].outbound_queue.qsize()}",
+                    f"   * Port {x}: {device[x].inbound_queue.qsize()} | {device[x].outbound_queue.qsize()}",
                 )
 
         print("CABLES (a->b | b->a):")
@@ -35,7 +35,7 @@ class Simulation:
             print(f" * {device.name}")
             for x in range(0, len(device.ports)):
                 print(
-                    f"   * Port {x}: {[str(x) for x in device.CAM.get_hwids_by_port(device.ports[x])]}",
+                    f"   * Port {x}: {[str(x) for x in device.CAM.get_hwids_by_port(device[x])]}",
                 )
 
     def add_device(self, device: Device):

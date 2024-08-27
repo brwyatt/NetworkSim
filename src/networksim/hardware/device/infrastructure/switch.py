@@ -83,6 +83,3 @@ class Switch(Device):
 
                 for dst_port in dst_ports:
                     dst_port.send(packet)
-
-    def __getitem__(self, index):
-        return self.ports[index]
