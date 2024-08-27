@@ -24,8 +24,28 @@ class Simulation:
 
         print("CABLES (a->b | b->a):")
         for cable in self.cables:
+            port_a = None
+            port_b = None
+
+            for device in self.devices:
+                try:
+                    port_a = f"{device.name}[{device.port_id(cable.a)}]"
+                except ValueError:
+                    pass
+                try:
+                    port_b = f"{device.name}[{device.port_id(cable.b)}]"
+                except ValueError:
+                    pass
+                if port_a is not None and port_b is not None:
+                    break
+
+            if port_a is None:
+                port_a = str(cable.a.hwid)
+            if port_b is None:
+                port_b = str(cable.b.hwid)
+
             print(
-                f" * {cable.a.hwid}/{cable.b.hwid}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
+                f" * {port_a}/{port_b}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
             )
 
         print("CAM TABLES:")

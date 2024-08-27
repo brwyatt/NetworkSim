@@ -58,10 +58,10 @@ DEVICES (queue in | queue out):
    * Port 2: 0 | 0
    * Port 3: 0 | 0
 CABLES (a->b | b->a):
- * f1:13:92:44:51:01/94:fa:31:9d:7a:01: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * c6:ad:c9:ba:60:01/f1:13:92:44:51:02: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * 88:76:b9:9a:1e:01/f1:13:92:44:51:03: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * 8c:5c:af:15:94:01/94:fa:31:9d:7a:02: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * SW1[0]/SW2[0]: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * A[0]/SW1[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * B[0]/SW1[2]: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * C[0]/SW2[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
 CAM TABLES:
  * SW1
    * Port 0: []
@@ -108,10 +108,10 @@ DEVICES (queue in | queue out):
    * Port 2: 0 | 0
    * Port 3: 0 | 0
 CABLES (a->b | b->a):
- * f1:13:92:44:51:01/94:fa:31:9d:7a:01: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * c6:ad:c9:ba:60:01/f1:13:92:44:51:02: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * 88:76:b9:9a:1e:01/f1:13:92:44:51:03: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * 8c:5c:af:15:94:01/94:fa:31:9d:7a:02: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * SW1[0]/SW2[0]: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * A[0]/SW1[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * B[0]/SW1[2]: ['None', 'None', 'None'] | ['None', 'None', 'None']
+ * C[0]/SW2[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
 CAM TABLES:
  * SW1
    * Port 0: ['8c:5c:af:15:94:01']
