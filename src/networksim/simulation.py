@@ -9,9 +9,10 @@ class Simulation:
         self.cables = []
         self.devices = []
 
-    def step(self):
-        for x in self.cables + self.devices:
-            x.step()
+    def step(self, steps: int = 1):
+        for _ in range(0, steps):
+            for x in self.cables + self.devices:
+                x.step()
 
     def show(self):
         print("DEVICES (queue in | queue out):")
