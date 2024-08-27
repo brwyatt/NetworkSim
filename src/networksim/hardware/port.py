@@ -52,7 +52,7 @@ class Port:
         try:
             packet = self.outbound_queue.get(block=False)
         except Empty:
-            logger.info(
+            logger.debug(
                 "Failed to dequeue packet from Outbound Queue: Queue empty!",
             )
             return None
@@ -79,7 +79,7 @@ class Port:
         try:
             packet = self.inbound_queue.get(block=False)
         except Empty:
-            logger.info(
+            logger.debug(
                 "Failed to dequeue packet from Inbound Queue: Queue empty!",
             )
             return None
