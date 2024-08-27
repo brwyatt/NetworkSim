@@ -34,6 +34,14 @@ sim.connect_devices(C, SW2)
 
 This creates a simple network with 3 devices with 1 port each and 2 switches with 4 ports. All ports will get randomized hardware IDs. The switches are connected to each other with cables of length 3 (measured in simulation steps), the first two devices are on the first switch, and the 3rd device is on the second switch.
 
+Essentially, it looks like this:
+
+```
+   SW1 -- SW2
+   / \     |
+  A   B    C
+```
+
 The simulation does not progress unless `sim.step()` is called. When the simulation progresses, each cable will place packets at the end of the cable's lenth onto the corresponding destination port's inbound queue, then progress remainling packets along the cable's distance by 1, then will read one packetfrom the outbound queues of the connected ports to the start of the cable's length. Next each switch will read from each of it's port's inbound queues, and forward the 1 packet to the outbound queue of the destination port (or ports, if the hardware ID is not found in the CAM table).
 
 The current state of all packets and devices can be viewed with `sim.show()`. This will show the status (size) of the inbound and outbound queues of all ports on all devices, the status of all packets traveling along cables, and the contents of the CAM tables on all switches.
