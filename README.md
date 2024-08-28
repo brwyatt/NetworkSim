@@ -86,7 +86,7 @@ CAM TABLES:
 A packet can be sent from A to B by placing it on the outbound queue of A's port and giving it a destination of B's port hardware ID. This can be done by calling either `outbound_write(packet)` or the more convenient `send(packet)`. For example:
 
 ```
-A[0].send(EthernetPacket(A[0].hwid, B[0].hwid, "TEST A->B"))
+A[0].send(EthernetPacket(dst=B[0].hwid, payload="TEST A->B"))
 ```
 
 After advancing the state of the simulation 8 steps (1 for it to go from the outbound queue to the cable, 2 to traverse the cable, 1 more to go from the cable to the switch, which processes it from the inbound queue to the outbound queues to B and the other switch (assuming B is not in the CAM tables), then 1 more to get placed on the cable to B, 2 to traverse the cable, and 1 more to get to B's inbound queue) the packet can be read from the port on B with `inbound_read()` or the more convenient `receive()`. For example:
