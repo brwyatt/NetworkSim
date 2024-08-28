@@ -27,13 +27,13 @@ class IPAddr:
 
         return cls(byte_value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ".".join([str(x) for x in self.byte_value])
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.byte_value == other.byte_value
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return int.from_bytes(self.byte_value, "big")
 
 
@@ -50,7 +50,7 @@ class IPNetwork:
 
         self.addr = self.apply_mask(addr)
 
-    def apply_mask(self, addr: IPAddr):
+    def apply_mask(self, addr: IPAddr) -> IPAddr:
         return IPAddr(
             byte_value=bytes(
                 [
@@ -59,14 +59,31 @@ class IPNetwork:
             )
         )
 
+    def broadcast_addr(self) -> IPAddr:
+        return IPAddr(
+            byte_value=bytes(
+                [
+                    x | (~y + 256) for x, y in zip(
+                        self.addr.byte_value[::-1], self.mask_bytes[::-1]
+                    )
+                ][::-1]
+            )
+        )
+
     def in_network(self, addr: IPAddr):
         return self.addr == self.apply_mask(addr)
 
-    def __str__(self):
+    @classmethod
+    def default(cls):
+        if not hasattr(cls, "_default"):
+           cls._default = cls(IPAddr(bytes(IPAddr.length_bytes)), 0)
+        return cls._default
+
+    def __str__(self) -> str:
         return f"{self.addr}/{self.match_bits}"
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.byte_value == other.byte_value
 
-    def __hash__(self):
-        return int.from_bytes(self.byte_value, "big")
+    def __hash__(self) -> int:
+        return hash((self.byte_value, self.match_bits))
