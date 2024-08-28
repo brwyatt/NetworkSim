@@ -5,7 +5,7 @@ from queue import Queue
 from typing import Optional
 
 from networksim.hwid import HWID
-from networksim.packet import Packet
+from networksim.packet.ethernet import EthernetPacket
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class Port:
 
         self._hwid = value
 
-    def outbound_write(self, packet: Packet):
+    def outbound_write(self, packet: EthernetPacket):
         if not self.connected:
             return
 
@@ -48,7 +48,7 @@ class Port:
                 "Failed to enqueue packet to Outbound Queue: Queue full!",
             )
 
-    def outbound_read(self) -> Optional[Packet]:
+    def outbound_read(self) -> Optional[EthernetPacket]:
         try:
             packet = self.outbound_queue.get(block=False)
         except Empty:
@@ -56,6 +56,9 @@ class Port:
                 "Failed to dequeue packet from Outbound Queue: Queue empty!",
             )
             return None
+
+        if packet.src is None:
+            packet.src = self.hwid
 
         self.outbound_queue.task_done()
         return packet
@@ -67,7 +70,7 @@ class Port:
         except Empty:
             pass
 
-    def inbound_write(self, packet: Packet):
+    def inbound_write(self, packet: EthernetPacket):
         try:
             self.inbound_queue.put(packet, block=False)
         except Full:
@@ -75,7 +78,7 @@ class Port:
                 "Failed to enqueue packet to Inbound Queue: Queue full!",
             )
 
-    def inbound_read(self) -> Optional[Packet]:
+    def inbound_read(self) -> Optional[EthernetPacket]:
         try:
             packet = self.inbound_queue.get(block=False)
         except Empty:
@@ -94,10 +97,10 @@ class Port:
         except Empty:
             pass
 
-    def send(self, packet: Packet):
+    def send(self, packet: EthernetPacket):
         self.outbound_write(packet)
 
-    def receive(self) -> Optional[Packet]:
+    def receive(self) -> Optional[EthernetPacket]:
         return self.inbound_read()
 
     def connect(self):
