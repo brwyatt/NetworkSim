@@ -31,6 +31,16 @@ class Device:
     def add_port(self, hwid: Optional[HWID] = None):
         self.ports.append(Port(hwid))
 
+    def handle_connection_state_change(self, port: Port):
+        pass
+
+    def check_connection_state_changes(self):
+        for port in self.ports:
+            if self.connection_states[port] != port.connected:
+                # Connection state has changed!
+                self.connection_states[port] = port.connected
+                self.handle_connection_state_change(port)
+
     def process_payload(self, payload):
         logger.info(payload)
 
@@ -50,6 +60,7 @@ class Device:
                 self.process_payload(packet.payload)
 
     def step(self):
+        self.check_connection_state_changes()
         if self.auto_process:
             self.process_inputs()
 

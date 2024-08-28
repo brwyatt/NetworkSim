@@ -62,14 +62,13 @@ class Switch(Device):
         super().__init__(name=name, port_count=port_count, auto_process=True)
         self.CAM = CAMTable(expiration=cam_expire)
 
+    def handle_connection_state_change(self, port: Port):
+        super().handle_connection_state_change(port)
+        self.CAM.delete_port(port)
+
     def process_inputs(self):
         self.CAM.expire()
         for port in self.ports:
-            if self.connection_states[port] != port.connected:
-                # Connection state has changed, flush port from CAM
-                self.connection_states[port] = port.connected
-                self.CAM.delete_port(port)
-
             packet = port.receive()
             if packet is not None:
                 self.CAM.add_entry(packet.src, port)
