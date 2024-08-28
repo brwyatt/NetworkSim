@@ -54,8 +54,9 @@ class Device:
                     )
                     continue
                 logger.info(
-                    f"Received {'broadcast' if packet.broadcast() else 'unicast'} "
-                    f"packet from {packet.src}"
+                    "Received "
+                    "broadcast" if packet.dst == HWID.broadcast() else "unicast"
+                    f" packet from {packet.src}"
                 )
                 self.process_payload(packet.payload)
 

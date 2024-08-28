@@ -24,6 +24,3 @@ class EthernetPacket(Packet):
             logger.error(f"src: expected `HWID` got `{type(src)}`")
 
         super().__init__(dst, src, payload)
-
-    def broadcast(self):
-        return self.dst == HWID.broadcast()

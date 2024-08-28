@@ -73,7 +73,11 @@ class Switch(Device):
             if packet is not None:
                 self.CAM.add_entry(packet.src, port)
 
-                dst_port = None if packet.broadcast() else self.CAM.get_port(packet.dst)
+                dst_port = (
+                    None
+                    if packet.dst == HWID.broadcast()
+                    else self.CAM.get_port(packet.dst)
+                )
                 if dst_port is None:
                     # Unknown destination or destination is broadcast... flood!
                     dst_ports = [x for x in self.ports if x != port]
