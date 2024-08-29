@@ -116,6 +116,34 @@ class RouteTable:
         return found_route
 
 
+IPBind = namedtuple("IPBind", ["addr", "network", "port"])
+
+
+class BoundIPs:
+    def __init__(self):
+        self.binds = []
+
+    def add_bind(self, addr: IPAddr, network: IPNetwork, port: Port):
+        bind = IPBind(addr, network, port)
+        if bind not in self.binds:
+            self.binds.append(bind)
+
+    def get_binds(
+        self,
+        addr: Optional[IPAddr] = None,
+        network: Optional[IPNetwork] = None,
+        port: Optional[Port] = None,
+    ) -> List[IPBind]:
+        return [
+            x for x in self.binds
+            if (
+                (addr is None or addr == x.addr) and
+                (network is None or network == x.network) and
+                (port is None or port == x.port)
+            )
+        ]
+
+
 class IPStack(Stack):
     def __init__(self):
         super().__init__()
