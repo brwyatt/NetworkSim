@@ -20,7 +20,7 @@ class Simulation:
             print(f" * {device.name}:")
             for x in range(0, len(device.ports)):
                 print(
-                    f"   * Port {x}: {device[x].inbound_queue.qsize()} | {device[x].outbound_queue.qsize()}",
+                    f"   * Port {x}: {len(device[x].inbound_queue)} | {len(device[x].outbound_queue)}",
                 )
 
         print("CABLES (a->b | b->a):")
@@ -67,7 +67,7 @@ class Simulation:
         if cable not in self.cables:
             self.cables.append(cable)
 
-    def connect_devices(self, a: Device, b: Device, length: int = 3):
+    def connect_devices(self, a: Device, b: Device, length: int = 3, bandwidth: int = 1):
         a_port = None
         for port in a.ports:
             a_port = port
@@ -80,7 +80,7 @@ class Simulation:
             if not port.connected:
                 break
 
-        cable = Cable(a_port, b_port, length)
+        cable = Cable(a_port, b_port, length, max_bandwidth=bandwidth)
 
         self.add_device(a)
         self.add_device(b)

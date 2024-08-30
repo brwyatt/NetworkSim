@@ -1,7 +1,4 @@
 import logging
-from queue import Empty
-from queue import Full
-from queue import Queue
 from typing import Optional
 
 from networksim.hwid import HWID
@@ -16,11 +13,27 @@ class AlreadyConnectedException(Exception):
 
 
 class Port:
-    def __init__(self, hwid: Optional[HWID] = None, queue_length: int = 3):
+    def __init__(
+        self,
+        hwid: Optional[HWID] = None,
+        queue_length: int = 3,
+        max_bandwidth: int = 1,
+    ):
         self.connected = False
         self.hwid = hwid
-        self.inbound_queue = Queue(queue_length)
-        self.outbound_queue = Queue(queue_length)
+        self._queue_length = queue_length
+        self.max_bandwidth = max_bandwidth
+        self.inbound_queue = []
+        self.outbound_queue = []
+
+    @property
+    def bandwidth(self):
+        # Probably need some way to find out the real negotiated bandwidth...
+        return self.max_bandwidth
+
+    @property
+    def queue_length(self):
+        return self._queue_length * self.bandwidth
 
     @property
     def hwid(self) -> HWID:
@@ -41,17 +54,13 @@ class Port:
         if not self.connected:
             return
 
-        try:
-            self.outbound_queue.put(packet, block=False)
-        except Full:
-            logger.warn(
-                "Failed to enqueue packet to Outbound Queue: Queue full!",
-            )
+        self.outbound_queue = (self.outbound_queue + [packet])[0:self.queue_length]
 
     def outbound_read(self) -> Optional[EthernetPacket]:
         try:
-            packet = self.outbound_queue.get(block=False)
-        except Empty:
+            packet = self.outbound_queue[0]
+            self.outbound_queue = self.outbound_queue[1:self.queue_length]
+        except IndexError:
             logger.debug(
                 "Failed to dequeue packet from Outbound Queue: Queue empty!",
             )
@@ -60,42 +69,28 @@ class Port:
         if packet.src is None:
             packet.src = self.hwid
 
-        self.outbound_queue.task_done()
         return packet
 
     def outbound_flush(self):
-        try:
-            while not self.outbound_queue.empty():
-                self.outbound_queue.get(block=False)
-        except Empty:
-            pass
+        self.outbound_queue = []
 
     def inbound_write(self, packet: EthernetPacket):
-        try:
-            self.inbound_queue.put(packet, block=False)
-        except Full:
-            logger.warn(
-                "Failed to enqueue packet to Inbound Queue: Queue full!",
-            )
+        self.inbound_queue = (self.inbound_queue + [packet])[0:self.queue_length]
 
     def inbound_read(self) -> Optional[EthernetPacket]:
         try:
-            packet = self.inbound_queue.get(block=False)
-        except Empty:
+            packet = self.inbound_queue[0]
+            self.inbound_queue = self.inbound_queue[1:self.queue_length]
+        except IndexError:
             logger.debug(
                 "Failed to dequeue packet from Inbound Queue: Queue empty!",
             )
             return None
 
-        self.inbound_queue.task_done()
         return packet
 
     def inbound_flush(self):
-        try:
-            while not self.inbound_queue.empty():
-                self.inbound_queue.get(block=False)
-        except Empty:
-            pass
+        self.inbound_queue = []
 
     def send(self, packet: EthernetPacket):
         self.outbound_write(packet)

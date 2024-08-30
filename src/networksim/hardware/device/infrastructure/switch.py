@@ -58,7 +58,9 @@ class Switch(Device):
         name: Optional[str] = None,
         port_count: int = 4,
         cam_expire: int = 100,
+        forward_capacity: int = 4
     ):
+        self.forward_capacity = forward_capacity
         super().__init__(name=name, port_count=port_count, auto_process=True)
         self.CAM = CAMTable(expiration=cam_expire)
 
@@ -71,21 +73,30 @@ class Switch(Device):
         super().run_jobs()
 
     def process_inputs(self):
-        for port in self.ports:
-            packet = port.receive()
-            if packet is not None:
-                self.CAM.add_entry(packet.src, port)
+        forwarded = 0
+        has_forwarded = True
+        while forwarded < self.forward_capacity and has_forwarded:
+            has_forwarded = False
+            for port in self.ports:
+                if forwarded >= self.forward_capacity:
+                    break
+                packet = port.receive()
+                if packet is not None:
+                    self.CAM.add_entry(packet.src, port)
 
-                dst_port = (
-                    None
-                    if packet.dst == HWID.broadcast()
-                    else self.CAM.get_port(packet.dst)
-                )
-                if dst_port is None:
-                    # Unknown destination or destination is broadcast... flood!
-                    dst_ports = [x for x in self.ports if x != port]
-                else:
-                    dst_ports = [dst_port]
+                    dst_port = (
+                        None
+                        if packet.dst == HWID.broadcast()
+                        else self.CAM.get_port(packet.dst)
+                    )
+                    if dst_port is None:
+                        # Unknown destination or destination is broadcast... flood!
+                        dst_ports = [x for x in self.ports if x != port]
+                    else:
+                        dst_ports = [dst_port]
 
-                for dst_port in dst_ports:
-                    dst_port.send(packet)
+                    for dst_port in dst_ports:
+                        dst_port.send(packet)
+
+                    has_forwarded = True
+                    forwarded += 1
