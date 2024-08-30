@@ -1,7 +1,7 @@
 import logging
 from bisect import insort
 from collections import namedtuple
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from networksim.hardware.port import Port
 from networksim.hwid import HWID
@@ -173,8 +173,8 @@ class IPStack(Stack):
         self.arp_expire = arp_expire
 
     @property
-    def supported_types(self) -> List[type]:
-        return [ARPPacket, IPPacket]
+    def supported_types(self) -> Tuple[type]:
+        return (ARPPacket, IPPacket)
 
     def bind(self, addr: IPAddr, network: IPNetwork, port: Port):
         self.bound_ips.add_bind(addr, network, port)

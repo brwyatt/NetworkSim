@@ -31,5 +31,5 @@ class IPDevice(Device):
             packet = port.receive()
             if packet is None or packet.dst not in [port.hwid, HWID.broadcast()]:
                 continue
-            if type(packet.payload) in self.ip.supported_types:
+            if isinstance(packet.payload, self.ip.supported_types):
                 self.ip.process_packet(packet.payload)
