@@ -60,8 +60,12 @@ class Device:
                 )
                 self.process_payload(packet.payload)
 
+    def run_jobs(self):
+        pass
+
     def step(self):
         self.check_connection_state_changes()
+        self.run_jobs()
         if self.auto_process:
             self.process_inputs()
 

@@ -272,6 +272,5 @@ class IPStack(Stack):
 
 
     def process_packet(self, packet: Union[ARPPacket, IPPacket]):
-        self.addr_table.expire()
         if type(packet) is ARPPacket:
             self.process_arp(packet)

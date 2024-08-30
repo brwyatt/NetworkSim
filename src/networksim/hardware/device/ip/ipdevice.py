@@ -26,6 +26,10 @@ class IPDevice(Device):
         if not port.connected:
             self.ip.unbind(port=port)
 
+    def run_jobs(self):
+        self.ip.addr_table.expire()
+        super().run_jobs()
+
     def process_inputs(self):
         for port in self.ports:
             packet = port.receive()

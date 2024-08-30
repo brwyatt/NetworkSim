@@ -66,8 +66,11 @@ class Switch(Device):
         super().handle_connection_state_change(port)
         self.CAM.delete_port(port)
 
-    def process_inputs(self):
+    def run_jobs(self):
         self.CAM.expire()
+        super().run_jobs()
+
+    def process_inputs(self):
         for port in self.ports:
             packet = port.receive()
             if packet is not None:
