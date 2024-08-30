@@ -13,6 +13,7 @@ class IPPacket(Packet):
         self,
         dst: IPAddr,
         src: Optional[IPAddr] = None,
+        ttl: int = 10,
         payload: Optional = None,
     ):
         if not isinstance(dst, IPAddr):
@@ -20,5 +21,9 @@ class IPPacket(Packet):
 
         if src is not None and not isinstance(src, IPAddr):
             raise TypeError(f"src: expected `IPAddr` got `{type(src)}`")
+
+        if not isinstance(ttl, int):
+            raise TypeError(f"ttl: expected `int` got `{type(src)}`")
+        self.ttl = ttl
 
         super().__init__(dst, src, payload)
