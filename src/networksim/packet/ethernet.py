@@ -17,10 +17,10 @@ class EthernetPacket(Packet):
     ):
         if dst is None:
             dst = HWID.broadcast()
-        if type(dst) is not HWID:
-            logger.error(f"dst: expected `HWID` got `{type(dst)}`")
+        if not isinstance(dst, HWID):
+            raise TypeError(f"dst: expected `HWID` got `{type(dst)}`")
 
-        if src is not None and type(src) is not HWID:
-            logger.error(f"src: expected `HWID` got `{type(src)}`")
+        if src is not None and not isinstance(src, HWID):
+            raise TypeError(f"src: expected `HWID` got `{type(src)}`")
 
         super().__init__(dst, src, payload)
