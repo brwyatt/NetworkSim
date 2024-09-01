@@ -92,7 +92,7 @@ class IPNetwork:
         return f"{self.addr}/{self.match_bits}"
 
     def __eq__(self, other) -> bool:
-        return self.byte_value == other.byte_value
+        return self.addr == other.addr and self.match_bits == other.match_bits
 
     def __hash__(self) -> int:
-        return hash((self.byte_value, self.match_bits))
+        return hash((self.addr, self.match_bits))

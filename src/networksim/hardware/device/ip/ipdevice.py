@@ -30,13 +30,6 @@ class IPDevice(Device):
         self.ip.addr_table.expire()
         super().run_jobs()
 
-    def process_inputs(self):
-        for port in self.ports:
-            packet = port.receive()
-            if packet is None or packet.dst not in [
-                port.hwid,
-                HWID.broadcast(),
-            ]:
-                continue
-            if isinstance(packet.payload, self.ip.supported_types):
-                self.ip.process_packet(packet.payload)
+    def process_payload(self, payload, src: HWID, dst: HWID, port: Port):
+        if isinstance(payload, self.ip.supported_types):
+            self.ip.process_packet(payload, src, dst, port)

@@ -41,7 +41,13 @@ class Device:
                 self.connection_states[port] = port.connected
                 self.handle_connection_state_change(port)
 
-    def process_payload(self, payload):
+    def process_payload(
+        self,
+        payload,
+        src: Optional[HWID] = None,
+        dst: Optional[HWID] = None,
+        port: Optional[Port] = None,
+    ):
         logger.info(payload)
 
     def process_inputs(self):
@@ -62,7 +68,12 @@ class Device:
                     )
                     + f" packet from {packet.src}",
                 )
-                self.process_payload(packet.payload)
+                self.process_payload(
+                    packet.payload,
+                    packet.src,
+                    packet.dst,
+                    port,
+                )
 
     def run_jobs(self):
         pass

@@ -273,10 +273,43 @@ class IPStack(Stack):
             ),
         )
 
-    def process_arp(self, packet: ARPPacket):
+    def local_source(
+        self,
+        src_ip: IPAddr,
+        port: Optional[Port] = None,
+    ) -> bool:
+        # Just checks that the reviced packet is from a local network
+        src_route = self.routes.find_route(src_ip)
+        if src_route is None:
+            return False
+        if (
+            (port is None or src_route.port == port)
+            and src_route.src is not None
+            and src_route.network is not None
+            and self.bound_ips.get_binds(
+                src_route.src,
+                src_route.network,
+                port,
+            )
+        ):
+            # Packet was received on the port we expect for that network (if given), and we have a bound IP for that network on that port. Basically, guards against packets on the wrong network/port overwriting the HWID of an IP in the ARP table on another network/port.
+            return True
+        return False
+
+    def add_arp(self, src_ip: IPAddr, src: HWID, port: Optional[Port] = None):
+        if self.local_source(src_ip, port):
+            self.addr_table.add_entry(src_ip, src)
+
+    def process_arp(
+        self,
+        packet: ARPPacket,
+        src: Optional[HWID] = None,
+        dst: Optional[HWID] = None,
+        port: Optional[Port] = None,
+    ):
         if packet.src is not None and packet.src_ip is not None:
             # Anything that gives something we can map
-            self.addr_table.add_entry(packet.src_ip, packet.src)
+            self.add_arp(packet.src_ip, packet.src, port)
 
             if (
                 packet.request
@@ -285,12 +318,21 @@ class IPStack(Stack):
             ):
                 # ARP Request
                 if len(self.bound_ips.get_binds(addr=packet.dst_ip)):
-                    # ARP if for one of our IPs, respond
+                    # ARP is for one of our IPs, respond
                     self.send_arp_response(
                         dst=packet.src_ip,
                         src=packet.dst_ip,
                     )
 
-    def process_packet(self, packet: Union[ARPPacket, IPPacket]):
-        if type(packet) is ARPPacket:
-            self.process_arp(packet)
+    def process_packet(
+        self,
+        packet: Union[ARPPacket, IPPacket],
+        src: Optional[HWID] = None,
+        dst: Optional[HWID] = None,
+        port: Optional[Port] = None,
+    ):
+        if isinstance(packet, ARPPacket):
+            self.process_arp(packet, src, dst, port)
+            return
+        elif isinstance(packet, IPPacket):
+            self.add_arp(packet.src_ip, packet.src, port)
