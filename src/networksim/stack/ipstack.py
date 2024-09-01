@@ -1,11 +1,15 @@
 import logging
 from bisect import insort
 from collections import namedtuple
-from typing import List, Optional, Tuple, Union
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from networksim.hardware.port import Port
 from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr, IPNetwork
+from networksim.ipaddr import IPAddr
+from networksim.ipaddr import IPNetwork
 from networksim.packet.arp import ARPPacket
 from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
@@ -102,12 +106,13 @@ class RouteTable:
         src: Optional[IPAddr] = None,
     ):
         self.routes = [
-            x for x in self.routes
+            x
+            for x in self.routes
             if not (
-                (network is None or network == x.network) and
-                (port is None or port == x.port) and
-                (via is None or via == x.via) and
-                (src is None or src == x.src)
+                (network is None or network == x.network)
+                and (port is None or port == x.port)
+                and (via is None or via == x.via)
+                and (src is None or src == x.src)
             )
         ]
 
@@ -140,11 +145,12 @@ class BoundIPs:
         port: Optional[Port] = None,
     ) -> List[IPBind]:
         return [
-            x for x in self.binds
+            x
+            for x in self.binds
             if (
-                (addr is None or addr == x.addr) and
-                (network is None or network == x.network) and
-                (port is None or port == x.port)
+                (addr is None or addr == x.addr)
+                and (network is None or network == x.network)
+                and (port is None or port == x.port)
             )
         ]
 
@@ -155,11 +161,12 @@ class BoundIPs:
         port: Optional[Port] = None,
     ) -> List[IPBind]:
         self.binds = [
-            x for x in self.binds
+            x
+            for x in self.binds
             if not (
-                (addr is None or addr == x.addr) and
-                (network is None or network == x.network) and
-                (port is None or port == x.port)
+                (addr is None or addr == x.addr)
+                and (network is None or network == x.network)
+                and (port is None or port == x.port)
             )
         ]
 
@@ -199,20 +206,26 @@ class IPStack(Stack):
             EthernetPacket(
                 dst=HWID.broadcast(),
                 src=route.port.hwid,
-                payload = ARPPacket(
+                payload=ARPPacket(
                     dst_ip=addr,
                     src=route.port.hwid,
                     src_ip=route.src,
                     request=True,
                 ),
-            )
+            ),
         )
 
-    def send_arp_response(self, dst: IPAddr, src: IPAddr, port: Optional[Port] = None):
+    def send_arp_response(
+        self,
+        dst: IPAddr,
+        src: IPAddr,
+        port: Optional[Port] = None,
+    ):
         if port is None:
             try:
                 port = [
-                    x for x in self.bound_ips.get_binds(addr=src)
+                    x
+                    for x in self.bound_ips.get_binds(addr=src)
                     if x.port is not None
                 ][:1][0].port
             except IndexError:
@@ -225,21 +238,22 @@ class IPStack(Stack):
             EthernetPacket(
                 dst=dst_hwid,
                 src=port.hwid,
-                payload = ARPPacket(
+                payload=ARPPacket(
                     dst=dst_hwid,
                     dst_ip=dst,
                     src=port.hwid,
                     src_ip=src,
                     request=False,
                 ),
-            )
+            ),
         )
 
     def send_garp(self, addr: IPAddr, port: Optional[Port]):
         if port is None:
             try:
                 port = [
-                    x for x in self.bound_ips.get_binds(addr=addr)
+                    x
+                    for x in self.bound_ips.get_binds(addr=addr)
                     if x.port is not None
                 ][:1][0].port
             except IndexError:
@@ -250,13 +264,13 @@ class IPStack(Stack):
             EthernetPacket(
                 dst=HWID.broadcast(),
                 src=port.hwid,
-                payload = ARPPacket(
+                payload=ARPPacket(
                     dst_ip=addr,  # silly, but it is how it is defined
                     src=port.hwid,
                     src_ip=addr,
                     request=False,
                 ),
-            )
+            ),
         )
 
     def process_arp(self, packet: ARPPacket):
@@ -264,12 +278,18 @@ class IPStack(Stack):
             # Anything that gives something we can map
             self.addr_table.add_entry(packet.src_ip, packet.src)
 
-            if packet.request and packet.dst is None and packet.dst_ip is not None:
+            if (
+                packet.request
+                and packet.dst is None
+                and packet.dst_ip is not None
+            ):
                 # ARP Request
                 if len(self.bound_ips.get_binds(addr=packet.dst_ip)):
                     # ARP if for one of our IPs, respond
-                    self.send_arp_response(dst=packet.src_ip, src=packet.dst_ip)
-
+                    self.send_arp_response(
+                        dst=packet.src_ip,
+                        src=packet.dst_ip,
+                    )
 
     def process_packet(self, packet: Union[ARPPacket, IPPacket]):
         if type(packet) is ARPPacket:

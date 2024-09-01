@@ -50,13 +50,17 @@ class Device:
             if packet is not None:
                 if packet.dst not in [port.hwid, HWID.broadcast()]:
                     logger.info(
-                        f"Ignoring packet from {packet.src} for {packet.dst} (not us!)"
+                        f"Ignoring packet from {packet.src} for {packet.dst} (not us!)",
                     )
                     continue
                 logger.info(
                     "Received "
-                    "broadcast" if packet.dst == HWID.broadcast() else "unicast"
-                    f" packet from {packet.src}"
+                    + (
+                        "broadcast"
+                        if packet.dst == HWID.broadcast()
+                        else "unicast"
+                    )
+                    + f" packet from {packet.src}",
                 )
                 self.process_payload(packet.payload)
 

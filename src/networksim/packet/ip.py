@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from networksim.packet import Packet
 from networksim.ipaddr import IPAddr
+from networksim.packet import Packet
 
 
 logger = logging.getLogger(__name__)

@@ -33,7 +33,10 @@ class IPDevice(Device):
     def process_inputs(self):
         for port in self.ports:
             packet = port.receive()
-            if packet is None or packet.dst not in [port.hwid, HWID.broadcast()]:
+            if packet is None or packet.dst not in [
+                port.hwid,
+                HWID.broadcast(),
+            ]:
                 continue
             if isinstance(packet.payload, self.ip.supported_types):
                 self.ip.process_packet(packet.payload)

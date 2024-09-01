@@ -62,9 +62,13 @@ class Cable:
         return min(
             min(
                 self.max_bandwidth,
-                self.a.max_bandwidth if self.a is not None else self.max_bandwidth
+                (
+                    self.a.max_bandwidth
+                    if self.a is not None
+                    else self.max_bandwidth
+                ),
             ),
-            self.b.max_bandwidth if self.b is not None else self.max_bandwidth
+            self.b.max_bandwidth if self.b is not None else self.max_bandwidth,
         )
 
     def flush(self):
@@ -95,8 +99,8 @@ class Cable:
             self.ba_transit[x - 1] = self.ba_transit[x]
 
         self.ab_transit[self.length - 1] = tuple(
-            [self.a.outbound_read() for _ in range(self.bandwidth)]
+            [self.a.outbound_read() for _ in range(self.bandwidth)],
         )
         self.ba_transit[self.length - 1] = tuple(
-            [self.b.outbound_read() for _ in range(self.bandwidth)]
+            [self.b.outbound_read() for _ in range(self.bandwidth)],
         )

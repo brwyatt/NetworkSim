@@ -54,12 +54,14 @@ class Port:
         if not self.connected:
             return
 
-        self.outbound_queue = (self.outbound_queue + [packet])[0:self.queue_length]
+        self.outbound_queue = (self.outbound_queue + [packet])[
+            0 : self.queue_length
+        ]
 
     def outbound_read(self) -> Optional[EthernetPacket]:
         try:
             packet = self.outbound_queue[0]
-            self.outbound_queue = self.outbound_queue[1:self.queue_length]
+            self.outbound_queue = self.outbound_queue[1 : self.queue_length]
         except IndexError:
             logger.debug(
                 "Failed to dequeue packet from Outbound Queue: Queue empty!",
@@ -75,12 +77,14 @@ class Port:
         self.outbound_queue = []
 
     def inbound_write(self, packet: EthernetPacket):
-        self.inbound_queue = (self.inbound_queue + [packet])[0:self.queue_length]
+        self.inbound_queue = (self.inbound_queue + [packet])[
+            0 : self.queue_length
+        ]
 
     def inbound_read(self) -> Optional[EthernetPacket]:
         try:
             packet = self.inbound_queue[0]
-            self.inbound_queue = self.inbound_queue[1:self.queue_length]
+            self.inbound_queue = self.inbound_queue[1 : self.queue_length]
         except IndexError:
             logger.debug(
                 "Failed to dequeue packet from Inbound Queue: Queue empty!",

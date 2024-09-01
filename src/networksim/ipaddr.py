@@ -16,14 +16,19 @@ class IPAddr:
 
     @byte_value.setter
     def byte_value(self, byte_value):
-        if type(byte_value) is not bytes or len(byte_value) != self.length_bytes:
+        if (
+            type(byte_value) is not bytes
+            or len(byte_value) != self.length_bytes
+        ):
             raise ValueError("Address is not bytes or wrong length!")
 
         self._byte_value = byte_value
 
     @classmethod
     def from_str(cls, addr_str: str):
-        byte_value = bytes([int(x).to_bytes(1, "big")[0] for x in addr_str.split(".")])
+        byte_value = bytes(
+            [int(x).to_bytes(1, "big")[0] for x in addr_str.split(".")],
+        )
 
         return cls(byte_value)
 
@@ -43,10 +48,8 @@ class IPNetwork:
             raise ValueError("match_bits is greater than address length!")
         self.match_bits = match_bits
         self.mask_bytes = (
-            ((2 ** match_bits) - 1) << ((IPAddr.length_bytes * 8) - match_bits)
-        ).to_bytes(
-            IPAddr.length_bytes, "big"
-        )
+            ((2**match_bits) - 1) << ((IPAddr.length_bytes * 8) - match_bits)
+        ).to_bytes(IPAddr.length_bytes, "big")
 
         self.addr = self.apply_mask(addr)
 
@@ -54,20 +57,26 @@ class IPNetwork:
         return IPAddr(
             byte_value=bytes(
                 [
-                    x & y for x, y in zip(addr.byte_value[::-1], self.mask_bytes[::-1])
-                ][::-1]
-            )
+                    x & y
+                    for x, y in zip(
+                        addr.byte_value[::-1],
+                        self.mask_bytes[::-1],
+                    )
+                ][::-1],
+            ),
         )
 
     def broadcast_addr(self) -> IPAddr:
         return IPAddr(
             byte_value=bytes(
                 [
-                    x | (~y + 256) for x, y in zip(
-                        self.addr.byte_value[::-1], self.mask_bytes[::-1]
+                    x | (~y + 256)
+                    for x, y in zip(
+                        self.addr.byte_value[::-1],
+                        self.mask_bytes[::-1],
                     )
-                ][::-1]
-            )
+                ][::-1],
+            ),
         )
 
     def in_network(self, addr: IPAddr):
@@ -76,7 +85,7 @@ class IPNetwork:
     @classmethod
     def default(cls):
         if not hasattr(cls, "_default"):
-           cls._default = cls(IPAddr(bytes(IPAddr.length_bytes)), 0)
+            cls._default = cls(IPAddr(bytes(IPAddr.length_bytes)), 0)
         return cls._default
 
     def __str__(self) -> str:

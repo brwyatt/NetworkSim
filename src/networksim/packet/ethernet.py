@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from networksim.packet import Packet
 from networksim.hwid import HWID
+from networksim.packet import Packet
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ class EthernetPacket(Packet):
         self,
         dst: Optional[HWID] = None,
         src: Optional[HWID] = None,
-        payload = None,
+        payload=None,
     ):
         if dst is None:
             dst = HWID.broadcast()

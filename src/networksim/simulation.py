@@ -67,7 +67,13 @@ class Simulation:
         if cable not in self.cables:
             self.cables.append(cable)
 
-    def connect_devices(self, a: Device, b: Device, length: int = 3, bandwidth: int = 1):
+    def connect_devices(
+        self,
+        a: Device,
+        b: Device,
+        length: int = 3,
+        bandwidth: int = 1,
+    ):
         a_port = None
         for port in a.ports:
             a_port = port

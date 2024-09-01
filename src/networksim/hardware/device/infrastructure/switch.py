@@ -1,4 +1,5 @@
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 from networksim.hardware.device import Device
 from networksim.hardware.port import Port
@@ -58,7 +59,7 @@ class Switch(Device):
         name: Optional[str] = None,
         port_count: int = 4,
         cam_expire: int = 100,
-        forward_capacity: int = 4
+        forward_capacity: int = 4,
     ):
         self.forward_capacity = forward_capacity
         super().__init__(name=name, port_count=port_count, auto_process=True)
