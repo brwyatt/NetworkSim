@@ -13,6 +13,9 @@ from networksim.ipaddr import IPNetwork
 from networksim.packet.arp import ARPPacket
 from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
+from networksim.packet.ip.icmp import ICMPPacket
+from networksim.packet.ip.icmp import ICMPPing
+from networksim.packet.ip.icmp import ICMPPong
 from networksim.stack import Stack
 
 
@@ -116,11 +119,20 @@ class RouteTable:
             )
         ]
 
-    def find_route(self, dst: IPAddr) -> Optional[Route]:
+    def find_route(
+        self,
+        dst: IPAddr,
+        src: Optional[IPAddr] = None,
+        port: Optional[Port] = None,
+    ) -> Optional[Route]:
         found_route = None
 
         for route in self.routes:
-            if route.network.in_network(dst):
+            if (
+                route.network.in_network(dst)
+                and (src is None or route.src == src)
+                and (port is None or route.port == port)
+            ):
                 found_route = route
 
         return found_route
@@ -248,7 +260,7 @@ class IPStack(Stack):
             ),
         )
 
-    def send_garp(self, addr: IPAddr, port: Optional[Port]):
+    def send_garp(self, addr: IPAddr, port: Optional[Port] = None):
         if port is None:
             try:
                 port = [
@@ -269,6 +281,40 @@ class IPStack(Stack):
                     src=port.hwid,
                     src_ip=addr,
                     request=False,
+                ),
+            ),
+        )
+
+    def send(
+        self,
+        dst: IPAddr,
+        payload,
+        src: Optional[IPAddr] = None,
+        port: Optional[Port] = None,
+    ):
+        route = self.routes.find_route(dst, src=src, port=port)
+        while route and route.src is None and route.via is not None:
+            route = self.routes.find_route(route.via, src=src, port=port)
+
+        if route is None:
+            logger.error(f"No route to {dst}!")
+
+        src = route.src
+        port = route.port
+        dst_hwid = self.addr_table.lookup(dst)
+
+        if dst_hwid is None:
+            logger.error(f"Unknown host {dst}! -- Try ARP first!")
+            return
+
+        port.send(
+            EthernetPacket(
+                dst=dst_hwid,
+                src=port.hwid,
+                payload=IPPacket(
+                    dst=dst,
+                    src=src,
+                    payload=payload,
                 ),
             ),
         )
@@ -324,6 +370,36 @@ class IPStack(Stack):
                         src=packet.dst_ip,
                     )
 
+    def process_icmp(
+        self,
+        packet: ICMPPacket,
+        src: IPAddr,
+        dst: IPAddr,
+        port: Optional[Port] = None,
+    ):
+        if isinstance(packet, ICMPPing):
+            if not self.bound_ips.get_binds(addr=dst, port=port):
+                logger.warn(f"Received ping for {dst} from {src} - Not us!")
+                return
+            self.send(
+                dst=src,
+                src=dst,
+                payload=ICMPPong(
+                    identifier=packet.identifier,
+                    sequence=packet.sequence,
+                    payload=packet.payload,
+                ),
+                port=port,
+            )
+            return
+        if isinstance(packet, ICMPPong):
+            if not self.bound_ips.get_binds(addr=dst, port=port):
+                logger.warn(f"Received pong for {dst} from {src} - Not us!")
+                return
+            logger.info(
+                f"Reveiced pong: {packet.identifier} - {packet.sequence}",
+            )
+
     def process_packet(
         self,
         packet: Union[ARPPacket, IPPacket],
@@ -334,5 +410,14 @@ class IPStack(Stack):
         if isinstance(packet, ARPPacket):
             self.process_arp(packet, src, dst, port)
             return
-        elif isinstance(packet, IPPacket):
-            self.add_arp(packet.src_ip, packet.src, port)
+
+        if isinstance(packet, IPPacket):
+            self.add_arp(packet.src, src, port)
+
+        if isinstance(packet.payload, ICMPPacket):
+            self.process_icmp(
+                packet=packet.payload,
+                src=packet.src,
+                dst=packet.dst,
+                port=port,
+            )

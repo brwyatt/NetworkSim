@@ -24,6 +24,7 @@ class Device:
         self.ports = []
         self.connection_states = defaultdict(lambda: False)
         self.auto_process = auto_process
+        self.time = 0
 
         for x in range(1, port_count + 1):
             self.add_port(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
@@ -79,6 +80,7 @@ class Device:
         pass
 
     def step(self):
+        self.time += 1
         self.check_connection_state_changes()
         self.run_jobs()
         if self.auto_process:
