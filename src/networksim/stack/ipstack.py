@@ -1,6 +1,7 @@
 import logging
 from bisect import insort
 from collections import namedtuple
+from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -183,6 +184,10 @@ class BoundIPs:
         ]
 
 
+class ProtocolAlreadyBoundException(Exception):
+    pass
+
+
 class IPStack(Stack):
     def __init__(self, arp_expire: int = 100):
         super().__init__()
@@ -190,6 +195,7 @@ class IPStack(Stack):
         self.routes = RouteTable()
         self.bound_ips = BoundIPs()
         self.arp_expire = arp_expire
+        self.protocol_binds = {}
 
     @property
     def supported_types(self) -> Tuple[type]:
@@ -207,6 +213,40 @@ class IPStack(Stack):
     ):
         self.bound_ips.del_binds(addr=addr, port=port)
         self.routes.del_routes(src=addr, port=port)
+
+    def bind_protocol(
+        self,
+        packet_type: type,
+        addr: IPAddr,
+        port: int,
+        callback: Callable,
+    ):
+        if (packet_type, addr, port) in self.protocol_binds:
+            raise ProtocolAlreadyBoundException(
+                f"Handler already bound for {packet_type} on {addr}:{port}!",
+            )
+
+        self.protocol_binds[(packet_type, addr, port)] = callback
+
+    def unbind_protocol(self, packet_type: type, addr: IPAddr, port: int):
+        try:
+            del self.protocol_binds[(packet_type, addr, port)]
+        except KeyError:
+            pass
+
+    def get_protocol_callback(
+        self,
+        packet_type: type,
+        addr: IPAddr,
+        port: int,
+    ) -> Optional[Callable]:
+        return self.protocol_binds.get(
+            (packet_type, addr, port),
+            self.protocol_binds.get(
+                (packet_type, IPAddr(byte_value=bytes(4)), port),
+                None,
+            ),
+        )
 
     def send_arp_request(self, addr: IPAddr):
         route = self.routes.find_route(addr)
@@ -399,6 +439,13 @@ class IPStack(Stack):
             logger.info(
                 f"Reveiced pong: {packet.identifier} - {packet.sequence}",
             )
+            callback = self.get_protocol_callback(
+                ICMPPong,
+                dst,
+                packet.identifier,
+            )
+            if callback is not None:
+                callback(packet, src=src, dst=dst, port=port)
 
     def process_packet(
         self,

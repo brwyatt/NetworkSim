@@ -1,7 +1,7 @@
 # NetworkSim
 Educational Network Simulation Tool
 
-## Basic Usage
+## Basic Usage (Ethernet)
 Example setup of a simulation:
 
 ```
@@ -135,4 +135,272 @@ CAM TABLES:
    * Port 3: []
 ARP TABLES:
 ROUTE TABLES:
+```
+
+## Using IP protocols
+
+Setup is similar, but uses IPDevice in order to enable the IP stack:
+
+```
+from networksim.hardware.device.infrastructure.switch import Switch
+from networksim.hardware.device.ip.ipdevice import IPDevice
+from networksim.ipaddr import IPAddr, IPNetwork
+from networksim.simulation import Simulation
+
+
+sim = Simulation()
+
+A = IPDevice(name="A")
+B = IPDevice(name="B")
+C = IPDevice(name="C")
+
+SW1 = Switch(name="SW1")
+SW2 = Switch(name="SW2")
+
+sim.add_device(A)
+sim.add_device(B)
+sim.add_device(C)
+sim.add_device(SW1)
+sim.add_device(SW2)
+
+sim.connect_devices(SW1, SW2)
+sim.connect_devices(A, SW1)
+sim.connect_devices(B, SW1)
+sim.connect_devices(C, SW2)
+```
+
+Using IP addressing comes with two new requirements. First, we must bind an IP address to a device port, and then we must be able to map IP addresses of others to the hardware address on the LAN to send the packets to.
+
+To bind an IP address to Device "A"'s port:
+
+```
+A.ip.bind(IPAddr.from_str("192.168.1.5"), IPNetwork(IPAddr.from_str("192.168.1.0"), 24), A[0])
+```
+
+This will register this address and network in the IP stack to the port on the device, and trigger the device to send a Gratuitous ARP, which is a broadcast message to other hosts on the same Ethernet segment to tell them the hardware address that the IP belongs to. When a device receives an ARP or IP packet from another device with an IP in a network it is bound to, it will keep track of it's hardware address within it's ARP table, similar to how a switch tracks the hardware address and port mapping in it's CAM table.
+
+If we step the simulation forward by 12 with `sim.step(12)` (so the GARP from A can reach Device B (8) that is on the same switch and Device C (12) attached to the other switch), we can see that both other Devices do not track this mapping yet using `sim.show()`:
+
+```
+DEVICES (queue in | queue out):
+ * A:
+   * Port[0] (c0:db:77:20:c2:01): 0 | 0
+     * 192.168.1.5/24
+ * B:
+   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
+ * C:
+   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
+ * SW1:
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
+ * SW2:
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
+CABLES (a->b | b->a):
+ * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * B[0]/SW1[2]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+CAM TABLES:
+ * SW1
+   * Port[0]: []
+   * Port[1]: ['c0:db:77:20:c2:01']
+   * Port[2]: []
+   * Port[3]: []
+ * SW2
+   * Port[0]: ['c0:db:77:20:c2:01']
+   * Port[1]: []
+   * Port[2]: []
+   * Port[3]: []
+ARP TABLES:
+ * A
+ * B
+ * C
+ROUTE TABLES:
+ * A
+   * 192.168.1.0/24 dev c0:db:77:20:c2:01 src 192.168.1.5
+ * B
+ * C
+```
+
+We can bind addresses to B and C to see how A behaves, with B in a different subnet and C with two addresses bound, one for each subnet:
+
+```
+B.ip.bind(IPAddr.from_str("192.168.0.10"), IPNetwork(IPAddr.from_str("192.168.0.0"), 24), B[0])
+C.ip.bind(IPAddr.from_str("192.168.1.15"), IPNetwork(IPAddr.from_str("192.168.1.15"), 24), C[0])
+C.ip.bind(IPAddr.from_str("192.168.0.20"), IPNetwork(IPAddr.from_str("192.168.0.20"), 24), C[0])
+```
+
+Then step the simulation forward 13 times with `sim.step(13)` (for the extra packet queued from C), and we can see how the ARP tables and IP address binds look:
+
+```
+DEVICES (queue in | queue out):
+ * A:
+   * Port[0] (c0:db:77:20:c2:01): 0 | 0
+     * 192.168.1.5/24
+ * B:
+   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
+     * 192.168.0.10/24
+ * C:
+   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
+     * 192.168.1.15/24
+     * 192.168.0.20/24
+ * SW1:
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
+ * SW2:
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
+CABLES (a->b | b->a):
+ * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * B[0]/SW1[2]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+CAM TABLES:
+ * SW1
+   * Port[0]: ['27:9a:e6:ca:44:01']
+   * Port[1]: ['c0:db:77:20:c2:01']
+   * Port[2]: ['56:8e:0a:50:aa:01']
+   * Port[3]: []
+ * SW2
+   * Port[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
+   * Port[1]: ['27:9a:e6:ca:44:01']
+   * Port[2]: []
+   * Port[3]: []
+ARP TABLES:
+ * A
+   * 192.168.1.15: 27:9a:e6:ca:44:01
+ * B
+   * 192.168.0.20: 27:9a:e6:ca:44:01
+ * C
+   * 192.168.0.10: 56:8e:0a:50:aa:01
+ROUTE TABLES:
+ * A
+   * 192.168.1.0/24 dev c0:db:77:20:c2:01 src 192.168.1.5
+ * B
+   * 192.168.0.0/24 dev 56:8e:0a:50:aa:01 src 192.168.0.10
+ * C
+   * 192.168.1.0/24 dev 27:9a:e6:ca:44:01 src 192.168.1.15
+   * 192.168.0.0/24 dev 27:9a:e6:ca:44:01 src 192.168.0.20
+```
+
+It is important to note that while A knows about C now, C does not know about A, even though it has an address in the same subnet as one of C's bound addresses. This is because C received the GARP from A before it bound it's IP to the interface. Both B and C know each other's addresses, as they bound their IP addresses before they received each other's GARP broadcasts.
+
+C can either wait to receive another GARP from A, or any IP packet from A, or C can query the network and ask for the owner of the IP address, if it was wanting to send an IP packet. To query the network for "192.168.1.5", C can send an ARP Request in order to generate an ARP Reply from A. This packet will be broadcast to all devices on the same Ethernet segment:
+
+```
+C.ip.send_arp_request(IPAddr.from_str("192.168.1.5"))
+```
+
+After stepping the simulation 24 times (12 for the request to reach A, 12 more for the response back to C):
+
+```
+DEVICES (queue in | queue out):
+ * A:
+   * Port[0] (c0:db:77:20:c2:01): 0 | 0
+     * 192.168.1.5/24
+ * B:
+   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
+     * 192.168.0.10/24
+ * C:
+   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
+     * 192.168.1.15/24
+     * 192.168.0.20/24
+ * SW1:
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
+ * SW2:
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
+CABLES (a->b | b->a):
+ * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * B[0]/SW1[2]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+ * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
+CAM TABLES:
+ * SW1
+   * Port[0]: ['27:9a:e6:ca:44:01']
+   * Port[1]: ['c0:db:77:20:c2:01']
+   * Port[2]: ['56:8e:0a:50:aa:01']
+   * Port[3]: []
+ * SW2
+   * Port[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
+   * Port[1]: ['27:9a:e6:ca:44:01']
+   * Port[2]: []
+   * Port[3]: []
+ARP TABLES:
+ * A
+   * 192.168.1.15: 27:9a:e6:ca:44:01
+ * B
+   * 192.168.0.20: 27:9a:e6:ca:44:01
+ * C
+   * 192.168.0.10: 56:8e:0a:50:aa:01
+   * 192.168.1.5: c0:db:77:20:c2:01
+ROUTE TABLES:
+ * A
+   * 192.168.1.0/24 dev c0:db:77:20:c2:01 src 192.168.1.5
+ * B
+   * 192.168.0.0/24 dev 56:8e:0a:50:aa:01 src 192.168.0.10
+ * C
+   * 192.168.1.0/24 dev 27:9a:e6:ca:44:01 src 192.168.1.15
+   * 192.168.0.0/24 dev 27:9a:e6:ca:44:01 src 192.168.0.20
+```
+
+We can do some simple Ping tests using ICMP packets and setting up a callback to process responses:
+
+```
+from networksim.packet.ip.icmp import ICMPPing, ICMPPong
+from random import randint
+
+def ping(device, dst):
+    identifier = randint(0,65535)
+    device.ip.send(
+        dst=dst,
+        payload=ICMPPing(
+            identifier=identifier,
+            sequence=1,
+            payload={"time": device.time},
+        ),
+    )
+
+    def handler(packet, src, dst, port):
+        print(f"{dst} recieved PONG from {src} seq={packet.sequence}: {device.time - packet.payload['time']}")
+        device.ip.send(
+            dst=src,
+            payload=ICMPPing(
+                identifier=packet.identifier,
+                sequence=packet.sequence+1,
+                payload={"time": device.time},
+            ),
+        )
+
+    device.ip.bind_protocol(ICMPPong, IPAddr(byte_value=bytes(4)), identifier, handler)
+
+ping(A, IPAddr.from_str("192.168.1.15"))
+ping(C, IPAddr.from_str("192.168.0.10"))
+```
+
+And stepping through the simulation for a bit (for example, 100 times), we can see the following printed:
+
+```
+192.168.1.5 recieved PONG from 192.168.1.15 seq=1: 24
+192.168.0.20 recieved PONG from 192.168.0.10 seq=1: 24
+192.168.1.5 recieved PONG from 192.168.1.15 seq=2: 24
+192.168.0.20 recieved PONG from 192.168.0.10 seq=2: 24
+192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24
+192.168.0.20 recieved PONG from 192.168.0.10 seq=3: 24
+192.168.1.5 recieved PONG from 192.168.1.15 seq=4: 24
+192.168.0.20 recieved PONG from 192.168.0.10 seq=4: 24
 ```
