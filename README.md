@@ -1,7 +1,7 @@
 # NetworkSim
 Educational Network Simulation Tool
 
-## Use
+## Basic Usage
 Example setup of a simulation:
 
 ```
@@ -50,21 +50,21 @@ For example:
 ```
 DEVICES (queue in | queue out):
  * A:
-   * Port 0: 0 | 0
+   * Port[0] (c6:ad:c9:ba:60:01): 0 | 0
  * B:
-   * Port 0: 0 | 0
+   * Port[0] (88:76:b9:9a:1e:01): 0 | 0
  * C:
-   * Port 0: 0 | 0
+   * Port[0] (8c:5c:af:15:94:01): 0 | 0
  * SW1:
-   * Port 0: 0 | 0
-   * Port 1: 0 | 0
-   * Port 2: 0 | 0
-   * Port 3: 0 | 0
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
  * SW2:
-   * Port 0: 0 | 0
-   * Port 1: 0 | 0
-   * Port 2: 0 | 0
-   * Port 3: 0 | 0
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
 CABLES (a->b | b->a):
  * SW1[0]/SW2[0]: ['None', 'None', 'None'] | ['None', 'None', 'None']
  * A[0]/SW1[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
@@ -72,15 +72,17 @@ CABLES (a->b | b->a):
  * C[0]/SW2[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
 CAM TABLES:
  * SW1
-   * Port 0: []
-   * Port 1: []
-   * Port 2: []
-   * Port 3: []
+   * Port[0]: []
+   * Port[1]: []
+   * Port[2]: []
+   * Port[3]: []
  * SW2
-   * Port 0: []
-   * Port 1: []
-   * Port 2: []
-   * Port 3: []
+   * Port[0]: []
+   * Port[1]: []
+   * Port[2]: []
+   * Port[3]: []
+ARP TABLES:
+ROUTE TABLES:
 ```
 
 A packet can be sent from A to B by placing it on the outbound queue of A's port and giving it a destination of B's port hardware ID. This can be done by calling either `outbound_write(packet)` or the more convenient `send(packet)`. For example:
@@ -100,21 +102,21 @@ After sending packets from all devices, the state will look something like this:
 ```
 DEVICES (queue in | queue out):
  * A:
-   * Port 0: 1 | 0
+   * Port[0] (c6:ad:c9:ba:60:01): 1 | 0
  * B:
-   * Port 0: 1 | 0
+   * Port[0] (88:76:b9:9a:1e:01): 1 | 0
  * C:
-   * Port 0: 3 | 0
+   * Port[0] (8c:5c:af:15:94:01): 3 | 0
  * SW1:
-   * Port 0: 0 | 0
-   * Port 1: 0 | 0
-   * Port 2: 0 | 0
-   * Port 3: 0 | 0
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 0
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
  * SW2:
-   * Port 0: 0 | 0
-   * Port 1: 0 | 1
-   * Port 2: 0 | 0
-   * Port 3: 0 | 0
+   * Port[0]: 0 | 0
+   * Port[1]: 0 | 1
+   * Port[2]: 0 | 0
+   * Port[3]: 0 | 0
 CABLES (a->b | b->a):
  * SW1[0]/SW2[0]: ['None', 'None', 'None'] | ['None', 'None', 'None']
  * A[0]/SW1[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
@@ -131,4 +133,6 @@ CAM TABLES:
    * Port 1: ['8c:5c:af:15:94:01']
    * Port 2: []
    * Port 3: []
+ARP TABLES:
+ROUTE TABLES:
 ```
