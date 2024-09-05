@@ -1,6 +1,8 @@
 import logging
 from collections import defaultdict
+from typing import Dict
 from typing import Optional
+from typing import Type
 
 from networksim.hardware.port import Port
 from networksim.helpers import randbytes
@@ -29,6 +31,10 @@ class Device:
         for x in range(1, port_count + 1):
             self.add_port(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
 
+        self.applications: Dict[str, Type["Application"]] = {}  # noqa: F821
+        self.process_list: Dict[int, "Application"] = {}  # noqa: F821
+        self.next_pid = 1
+
     def add_port(self, hwid: Optional[HWID] = None):
         self.ports.append(Port(hwid))
 
@@ -41,6 +47,34 @@ class Device:
                 # Connection state has changed!
                 self.connection_states[port] = port.connected
                 self.handle_connection_state_change(port)
+
+    def add_application(
+        self,
+        application: Type["Application"],  # noqa: F821
+        name: Optional[str] = None,
+    ):
+        if name is None:
+            name = application.__name__
+
+        if name in self.applications:
+            raise KeyError("Application already registered")
+
+        self.applications[name] = application
+
+    def start_application(self, name: str, *args, **kwargs) -> int:
+        proc = self.applications[name](self, *args, **kwargs)
+        proc.start()
+        self.process_list[self.next_pid] = proc
+        self.next_pid += 1
+
+        return self.next_pid - 1
+
+    def stop_application(self, pid: int):
+        try:
+            self.process_list[pid].stop()
+            del self.process_list[pid]
+        except KeyError:
+            pass
 
     def process_payload(
         self,
@@ -79,10 +113,15 @@ class Device:
     def run_jobs(self):
         pass
 
+    def run_applications(self):
+        for application in self.process_list.values():
+            application.step()
+
     def step(self):
         self.time += 1
         self.check_connection_state_changes()
         self.run_jobs()
+        self.run_applications()
         if self.auto_process:
             self.process_inputs()
 
