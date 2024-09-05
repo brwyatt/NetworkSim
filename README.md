@@ -358,49 +358,43 @@ ROUTE TABLES:
    * 192.168.0.0/24 dev 27:9a:e6:ca:44:01 src 192.168.0.20
 ```
 
-We can do some simple Ping tests using ICMP packets and setting up a callback to process responses:
+We can do some simple Ping tests using the ping application to send ICMP Echo Request packets and handle ICMP Echo Reply packets:
 
 ```
-from networksim.packet.ip.icmp import ICMPPing, ICMPPong
-from random import randint
+from networksim.application.ping import Ping
 
-def ping(device, dst):
-    identifier = randint(0,65535)
-    device.ip.send(
-        dst=dst,
-        payload=ICMPPing(
-            identifier=identifier,
-            sequence=1,
-            payload={"time": device.time},
-        ),
-    )
-
-    def handler(packet, src, dst, port):
-        print(f"{dst} recieved PONG from {src} seq={packet.sequence}: {device.time - packet.payload['time']}")
-        device.ip.send(
-            dst=src,
-            payload=ICMPPing(
-                identifier=packet.identifier,
-                sequence=packet.sequence+1,
-                payload={"time": device.time},
-            ),
-        )
-
-    device.ip.bind_protocol(ICMPPong, IPAddr(byte_value=bytes(4)), identifier, handler)
-
-ping(A, IPAddr.from_str("192.168.1.15"))
-ping(C, IPAddr.from_str("192.168.0.10"))
+A.add_application(Ping, "ping")
+A.start_application("ping", IPAddr.from_str("192.168.1.15"))
 ```
 
-And stepping through the simulation for a bit (for example, 100 times), we can see the following printed:
+And stepping through the simulation for a bit (for example, 100 times), we can check the process log:
 
 ```
-192.168.1.5 recieved PONG from 192.168.1.15 seq=1: 24
-192.168.0.20 recieved PONG from 192.168.0.10 seq=1: 24
-192.168.1.5 recieved PONG from 192.168.1.15 seq=2: 24
-192.168.0.20 recieved PONG from 192.168.0.10 seq=2: 24
-192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24
-192.168.0.20 recieved PONG from 192.168.0.10 seq=3: 24
-192.168.1.5 recieved PONG from 192.168.1.15 seq=4: 24
-192.168.0.20 recieved PONG from 192.168.0.10 seq=4: 24
+A.process_list[1].log
+```
+
+...and see the following:
+
+```
+['1: Sending Ping with seq=1',
+ '24: 192.168.1.5 recieved PONG from 192.168.1.15 seq=1: 24',
+ '25: Sending Ping with seq=2',
+ '49: 192.168.1.5 recieved PONG from 192.168.1.15 seq=2: 24',
+ '50: Sending Ping with seq=3',
+ '74: 192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24',
+ '75: Sending Ping with seq=4',
+ '99: 192.168.1.5 recieved PONG from 192.168.1.15 seq=4: 24',
+ '100: Sending Ping with seq=5',
+```
+
+This application will also send an ARP request if the host is not already known. If we stop the Ping (`A.stop_application(1)`) then step the simulation forward enough for the ARP table entries to expire, we can then start another Ping as before, and check it's logs (note, the process ID will now be 2, instead of 1, as this ID always increments) and step the simulation forward again to see the result in the logs:
+
+```
+['1: Host unknown, sending ARP',
+ '26: Sending Ping with seq=1',
+ '50: 192.168.1.5 recieved PONG from 192.168.1.15 seq=1: 24',
+ '51: Sending Ping with seq=2',
+ '75: 192.168.1.5 recieved PONG from 192.168.1.15 seq=2: 24',
+ '76: Sending Ping with seq=3',
+ '100: 192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24']
 ```
