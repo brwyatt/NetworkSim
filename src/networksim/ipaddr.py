@@ -66,6 +66,7 @@ class IPNetwork:
             ),
         )
 
+    @property
     def broadcast_addr(self) -> IPAddr:
         return IPAddr(
             byte_value=bytes(
