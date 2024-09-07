@@ -398,3 +398,29 @@ This application will also send an ARP request if the host is not already known.
  '76: Sending Ping with seq=3',
  '100: 192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24']
 ```
+
+### DHCP
+Instead of assigning static IP addresses, DHCP can be used. One device must have a static IP address to act as the DHCP server. The DHCP Server application can be started with:
+
+```
+from networksim.application.dhcp.server import DHCPServer
+
+dhcp_server.add_application(DHCPServer, "dhcp_server")
+dhcp_server.start_application(
+    "dhcp_server",
+    network=dhcp_server.ip.bound_ips.get_binds(
+        port=dhcp_server[0],
+    )[0].network,
+)
+```
+
+This server will start responding to DHCP requests from clients on the network, which can then be started with the following for each device:
+
+```
+from networksim.application.dhcp.client import DHCPClient
+
+A.add_application(DHCPClient, "dhcp_client")
+A.start_application("dhcp_client")
+```
+
+This will start the DHCP Client for every port on the device (alternatively, a list of ports can be passed when starting the application if only specific ports are desired for DHCP). For each connected port, the DHCP Client will start sending DHCPDiscover messages and begin the process of getting an IP address from the DHCP Server, which is a 2-step process, with each step being a query from the client and a reply from the server (DHCPDiscover->DHCPOffer, DHCPRequest->DHCPAck), at which point the client will bind the issued IP to the port, and periodically renew it based on the renewal, rebind, and expiration times.
