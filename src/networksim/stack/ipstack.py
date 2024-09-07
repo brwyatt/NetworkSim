@@ -17,6 +17,7 @@ from networksim.packet.ip import IPPacket
 from networksim.packet.ip.icmp import ICMPPacket
 from networksim.packet.ip.icmp import ICMPPing
 from networksim.packet.ip.icmp import ICMPPong
+from networksim.packet.ip.udp import UDP
 from networksim.stack import Stack
 
 
@@ -447,9 +448,24 @@ class IPStack(Stack):
             if callback is not None:
                 callback(packet, src=src, dst=dst, port=port)
 
+    def process_udp(
+        self,
+        packet: ICMPPacket,
+        src: IPAddr,
+        dst: IPAddr,
+        port: Optional[Port] = None,
+    ):
+        callback = self.get_protocol_callback(
+            UDP,
+            dst,
+            packet.dst_port,
+        )
+        if callback is not None:
+            callback(packet, src=src, dst=dst, port=port)
+
     def process_packet(
         self,
-        packet: Union[ARPPacket, IPPacket],
+        packet: Union[ARPPacket, IPPacket, UDP],
         src: Optional[HWID] = None,
         dst: Optional[HWID] = None,
         port: Optional[Port] = None,
@@ -463,6 +479,14 @@ class IPStack(Stack):
 
         if isinstance(packet.payload, ICMPPacket):
             self.process_icmp(
+                packet=packet.payload,
+                src=packet.src,
+                dst=packet.dst,
+                port=port,
+            )
+
+        if isinstance(packet.payload, UDP):
+            self.process_udp(
                 packet=packet.payload,
                 src=packet.src,
                 dst=packet.dst,
