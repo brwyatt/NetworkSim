@@ -118,7 +118,7 @@ class DHCPServer(Application):
             addr = (
                 addr
                 if addr is not None and addr in self.pool
-                else choice(self.pool)
+                else choice(list(self.pool))
             )
             lease = DHCPLease(hwid, addr, self.lease_time)
         lease.expires = self.lease_time
