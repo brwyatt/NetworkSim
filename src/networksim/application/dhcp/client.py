@@ -127,6 +127,7 @@ class DHCPClient(Application):
                 if lease["server"] is not None:
                     options[54] = lease["server"]
 
+                self.log.append(f"Sending DHCPRequest ({lease['state']})")
                 port.send(
                     EthernetPacket(
                         dst=HWID.broadcast(),
@@ -161,6 +162,7 @@ class DHCPClient(Application):
                     # Request last IP, if available
                     options[50] = lease["bind"].addr
 
+                self.log.append(f"Sending DHCPDiscover ({lease['state']})")
                 port.send(
                     EthernetPacket(
                         dst=HWID.broadcast(),
@@ -204,6 +206,7 @@ class DHCPClient(Application):
                         self.device.ip.send_arp_request(lease["server"])
                     continue
 
+                self.log.append(f"Sending DHCPRequest ({lease['state']})")
                 port.send(
                     EthernetPacket(
                         dst=dst_hwid,
@@ -244,11 +247,13 @@ class DHCPClient(Application):
             return
 
         if isinstance(packet.payload, payload.DHCPNack):
+            self.log.append(f"Received DHCPNack ({lease['state']})")
             if lease["state"] in ["INIT-REBOOT", "RENEWING", "REBINDING"]:
                 self.init_port(port)
             return
 
         if isinstance(packet.payload, payload.DHCPOffer):
+            self.log.append(f"Received DHCPOffer ({lease['state']})")
             if lease["state"] != "INIT":
                 self.log.append("Received DHCP OFFER when not in valid state")
                 return
@@ -286,6 +291,7 @@ class DHCPClient(Application):
             )
 
         if isinstance(packet.payload, payload.DHCPAck):
+            self.log.append(f"Received DHCPAck ({lease['state']})")
             if lease["state"] not in [
                 "INIT-REBOOT",
                 "SELECTING",

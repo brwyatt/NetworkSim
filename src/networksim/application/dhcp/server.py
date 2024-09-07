@@ -200,9 +200,11 @@ class DHCPServer(Application):
             options[6] = self.nameservers
 
         if isinstance(packet.payload, payload.DHCPDiscover):
+            self.log.append("Received DHCPDiscover")
             req_ip = packet.payload.options.get(50, None)
             lease = self.checkout(packet.payload.client_hwid, req_ip)
 
+            self.log.append("Sending DHCPOffer")
             port.send(
                 EthernetPacket(
                     dst=lease.hwid,
@@ -226,6 +228,7 @@ class DHCPServer(Application):
             return
 
         if isinstance(packet.payload, payload.DHCPRequest):
+            self.log.append("Received DHCPRequest")
             server = packet.payload.options.get(54, packet.payload.server_ip)
             if server != bind.addr:
                 self.log.append(
@@ -251,6 +254,7 @@ class DHCPServer(Application):
                 )
                 self.checkin(hwid=lease.hwid, addr=lease.addr)
                 # send a NACK
+                self.log.append("Sending DHCPNack")
                 port.send(
                     EthernetPacket(
                         dst=lease.hwid,
@@ -270,6 +274,7 @@ class DHCPServer(Application):
                     ),
                 )
 
+            self.log.append("Sending DHCPAck")
             port.send(
                 EthernetPacket(
                     dst=lease.hwid,
