@@ -2,7 +2,7 @@ from random import choice
 from typing import List
 from typing import Optional
 
-import netwroksim.application.dhcp.payload as payload
+import networksim.application.dhcp.payload as payload
 from networksim.application import Application
 from networksim.hardware.device import Device
 from networksim.hardware.port import Port
@@ -16,7 +16,7 @@ from networksim.packet.ip.udp import UDP
 
 
 class DHCPLease:
-    def __init__(self, hwid: HWID, addr: IPAddr, expires: int = 250):
+    def __init__(self, hwid: HWID, addr: IPAddr, expires: int = 500):
         self.hwid = hwid
         self.addr = addr
         self.expires = expires
@@ -34,7 +34,7 @@ class DHCPServer(Application):
         device: Device,
         network: IPNetwork,
         *args,
-        lease_time: int = 250,
+        lease_time: int = 500,
         range_start: Optional[IPAddr] = None,
         range_end: Optional[IPAddr] = None,
         router: Optional[IPAddr] = None,
@@ -189,7 +189,10 @@ class DHCPServer(Application):
 
         # set options
         options = {
+            1: self.network,
             51: self.lease_time,
+            58: int(self.lease_time / 2),
+            59: int(self.lease_time * 3 / 4),
         }
         if self.router is not None:
             options[3] = self.router
@@ -247,7 +250,25 @@ class DHCPServer(Application):
                     f"from {packet.payload.client_hwid}",
                 )
                 self.checkin(hwid=lease.hwid, addr=lease.addr)
-                # Probably send a NACK?
+                # send a NACK
+                port.send(
+                    EthernetPacket(
+                        dst=lease.hwid,
+                        src=port.hwid,
+                        payload=IPPacket(
+                            dst=lease.addr,
+                            src=bind.addr,
+                            payload=UDP(
+                                dst_port=68,
+                                src_port=67,
+                                payload=payload.DHCPNack(
+                                    server_ip=bind.addr,
+                                    client_hwid=lease.hwid,
+                                ),
+                            ),
+                        ),
+                    ),
+                )
 
             port.send(
                 EthernetPacket(

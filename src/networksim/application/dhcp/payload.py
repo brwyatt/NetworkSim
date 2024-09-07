@@ -45,3 +45,8 @@ class DHCPRequest(DHCPPayload):
 class DHCPAck(DHCPPayload):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+class DHCPNack(DHCPPayload):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
