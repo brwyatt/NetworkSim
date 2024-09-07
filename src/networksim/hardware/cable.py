@@ -7,13 +7,22 @@ logger = logging.getLogger(__name__)
 
 
 class Cable:
-    def __init__(self, a: Port = None, b: Port = None, length: int = 3):
+    def __init__(
+        self,
+        a: Port = None,
+        b: Port = None,
+        length: int = 3,
+        max_bandwidth: int = 1,
+    ):
+        self.length = length
+        self.max_bandwidth = max_bandwidth
         self.a = a
         self.b = b
-        self.length = 3
 
     @property
     def a(self) -> Port:
+        if not hasattr(self, "_a"):
+            return None
         return self._a
 
     @a.setter
@@ -31,6 +40,8 @@ class Cable:
 
     @property
     def b(self) -> Port:
+        if not hasattr(self, "_b"):
+            return None
         return self._b
 
     @b.setter
@@ -46,9 +57,29 @@ class Cable:
 
         self.flush()
 
+    @property
+    def bandwidth(self):
+        return min(
+            min(
+                self.max_bandwidth,
+                (
+                    self.a.max_bandwidth
+                    if self.a is not None
+                    else self.max_bandwidth
+                ),
+            ),
+            self.b.max_bandwidth if self.b is not None else self.max_bandwidth,
+        )
+
     def flush(self):
-        self.ab_transit = [None for x in range(0, 3)]
-        self.ba_transit = [None for x in range(0, 3)]
+        self.ab_transit = [
+            tuple([None for x in range(0, self.bandwidth)])
+            for x in range(0, self.length)
+        ]
+        self.ba_transit = [
+            tuple([None for x in range(0, self.bandwidth)])
+            for x in range(0, self.length)
+        ]
 
     def step(self):
         if self.a is None or self.b is None:
@@ -57,13 +88,19 @@ class Cable:
 
         for x in range(0, self.length):
             if x == 0:
-                if self.ab_transit[x] is not None:
-                    self.b.inbound_write(self.ab_transit[x])
-                if self.ba_transit[x] is not None:
-                    self.a.inbound_write(self.ba_transit[x])
+                for packet in self.ab_transit[x]:
+                    if packet is not None:
+                        self.b.inbound_write(packet)
+                for packet in self.ba_transit[x]:
+                    if packet is not None:
+                        self.a.inbound_write(packet)
                 continue
             self.ab_transit[x - 1] = self.ab_transit[x]
             self.ba_transit[x - 1] = self.ba_transit[x]
 
-        self.ab_transit[self.length - 1] = self.a.outbound_read()
-        self.ba_transit[self.length - 1] = self.b.outbound_read()
+        self.ab_transit[self.length - 1] = tuple(
+            [self.a.outbound_read() for _ in range(self.bandwidth)],
+        )
+        self.ba_transit[self.length - 1] = tuple(
+            [self.b.outbound_read() for _ in range(self.bandwidth)],
+        )

@@ -44,7 +44,9 @@ class HWID:
     @classmethod
     def broadcast(cls):
         if not hasattr(cls, "_broadcast"):
-            cls._broadcast = cls(int.to_bytes(255, 1, "big") * cls.length_bytes)
+            cls._broadcast = cls(
+                int.to_bytes(255, 1, "big") * cls.length_bytes,
+            )
         return cls._broadcast
 
     def __eq__(self, other):
