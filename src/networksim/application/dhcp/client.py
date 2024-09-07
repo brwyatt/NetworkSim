@@ -278,12 +278,14 @@ class DHCPClient(Application):
             lease["state"] = "SELECTING"
             lease["bind"] = bind
             lease["request-timeout"] = 0
-            lease["expire"] = (packet.payload.options.get(51, 500),)
-            lease["renew"] = (
-                packet.payload.options.get(58, int(lease["expire"] / 2)),
+            lease["expire"] = packet.payload.options.get(51, 500)
+            lease["renew"] = packet.payload.options.get(
+                58,
+                int(lease["expire"] / 2),
             )
-            lease["rebind"] = (
-                packet.payload.options.get(59, int(lease["expire"] * 3 / 4)),
+            lease["rebind"] = packet.payload.options.get(
+                59,
+                int(lease["expire"] * 3 / 4),
             )
             lease["server"] = packet.payload.options.get(
                 54,
@@ -331,12 +333,14 @@ class DHCPClient(Application):
             )
             lease["state"] = "BOUND"
             lease["request-timeout"] = 0
-            lease["expire"] = (packet.payload.options.get(51, 500),)
-            lease["renew"] = (
-                packet.payload.options.get(58, int(lease["expire"] / 2)),
+            lease["expire"] = packet.payload.options.get(51, 500)
+            lease["renew"] = packet.payload.options.get(
+                58,
+                int(lease["expire"] / 2),
             )
-            lease["rebind"] = (
-                packet.payload.options.get(59, int(lease["expire"] * 3 / 4)),
+            lease["rebind"] = packet.payload.options.get(
+                59,
+                int(lease["expire"] * 3 / 4),
             )
             lease["server"] = packet.payload.options.get(
                 54,
