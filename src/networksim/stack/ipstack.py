@@ -76,6 +76,9 @@ class Route:
         self.via = via
         self.src = src
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     def __lt__(self, other):
         return self.network.match_bits < other.network.match_bits
 
