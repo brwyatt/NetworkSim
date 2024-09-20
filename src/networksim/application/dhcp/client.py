@@ -15,6 +15,11 @@ from networksim.stack.ipstack import IPBind
 
 
 class DHCPClient(Application):
+    default_route = IPNetwork(
+        addr=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
+        match_bits=0,
+    )
+
     def __init__(
         self,
         device: Device,
@@ -64,8 +69,14 @@ class DHCPClient(Application):
                 addr=self.leases[port]["bind"].addr,
                 port=port,
             )
+            self.device.ip.routes.del_routes(
+                network=self.default_route,
+                port=port,
+            )
         self.leases[port]["bind"] = None
         self.leases[port]["server"] = None
+        self.leases[port]["router"] = None
+        self.leases[port]["nameservers"] = None
 
         return self.leases[port]
 
@@ -291,6 +302,8 @@ class DHCPClient(Application):
                 54,
                 packet.payload.server_ip,
             )
+            lease["router"] = packet.payload.options.get(3)
+            lease["nameservers"] = packet.payload.options.get(6)
 
         if isinstance(packet.payload, payload.DHCPAck):
             self.log.append(f"Received DHCPAck ({lease['state']})")
@@ -346,3 +359,13 @@ class DHCPClient(Application):
                 54,
                 packet.payload.server_ip,
             )
+
+            lease["router"] = packet.payload.options.get(3)
+            if lease["router"] is not None:
+                self.device.ip.routes.add_route(
+                    self.default_route,
+                    port,
+                    via=lease["router"],
+                )
+
+            lease["nameservers"] = packet.payload.options.get(6)
