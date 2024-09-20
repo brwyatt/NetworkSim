@@ -4,6 +4,7 @@ from typing import Optional
 from networksim.hardware.device import Device
 from networksim.hardware.port import Port
 from networksim.hwid import HWID
+from networksim.packet import Packet
 
 
 class CAMEntry:
@@ -59,11 +60,19 @@ class Switch(Device):
         name: Optional[str] = None,
         port_count: int = 4,
         cam_expire: int = 100,
-        forward_capacity: int = 4,
+        forward_capacity: Optional[int] = None,
     ):
-        self.forward_capacity = forward_capacity
-        super().__init__(name=name, port_count=port_count, auto_process=True)
+        super().__init__(
+            name=name,
+            port_count=port_count,
+            auto_process=True,
+            process_rate=forward_capacity,
+        )
         self.CAM = CAMTable(expiration=cam_expire)
+
+    @property
+    def forward_capacity(self):
+        return self.process_rate
 
     def handle_connection_state_change(self, port: Port):
         super().handle_connection_state_change(port)
@@ -73,31 +82,19 @@ class Switch(Device):
         self.CAM.expire()
         super().run_jobs()
 
-    def process_inputs(self):
-        forwarded = 0
-        has_forwarded = True
-        while forwarded < self.forward_capacity and has_forwarded:
-            has_forwarded = False
-            for port in self.ports:
-                if forwarded >= self.forward_capacity:
-                    break
-                packet = port.receive()
-                if packet is not None:
-                    self.CAM.add_entry(packet.src, port)
+    def process_packet(self, packet: Packet, port: Port):
+        self.CAM.add_entry(packet.src, port)
 
-                    dst_port = (
-                        None
-                        if packet.dst == HWID.broadcast()
-                        else self.CAM.get_port(packet.dst)
-                    )
-                    if dst_port is None:
-                        # Unknown destination or destination is broadcast... flood!
-                        dst_ports = [x for x in self.ports if x != port]
-                    else:
-                        dst_ports = [dst_port]
+        dst_port = (
+            None
+            if packet.dst == HWID.broadcast()
+            else self.CAM.get_port(packet.dst)
+        )
+        if dst_port is None:
+            # Unknown destination or destination is broadcast... flood!
+            dst_ports = [x for x in self.ports if x != port]
+        else:
+            dst_ports = [dst_port]
 
-                    for dst_port in dst_ports:
-                        dst_port.send(packet)
-
-                    has_forwarded = True
-                    forwarded += 1
+        for dst_port in dst_ports:
+            dst_port.send(packet)

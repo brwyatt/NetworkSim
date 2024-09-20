@@ -7,6 +7,7 @@ from typing import Type
 from networksim.hardware.port import Port
 from networksim.helpers import randbytes
 from networksim.hwid import HWID
+from networksim.packet import Packet
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class Device:
         name: Optional[str] = None,
         port_count: int = 1,
         auto_process: bool = False,
+        process_rate: Optional[int] = None,
     ):
         self.base_MAC = randbytes(5)
         if name is None:
@@ -30,6 +32,13 @@ class Device:
 
         for x in range(1, port_count + 1):
             self.add_port(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
+
+        # By default, be able to process combined full (max) line-rate
+        self.process_rate = (
+            process_rate
+            if process_rate is not None
+            else sum([x.max_bandwidth for x in self.ports])
+        )
 
         self.applications: Dict[str, Type["Application"]] = {}  # noqa: F821
         self.process_list: Dict[int, "Application"] = {}  # noqa: F821
@@ -85,30 +94,38 @@ class Device:
     ):
         logger.info(payload)
 
+    def process_packet(self, packet: Packet, port: Port):
+        if packet.dst not in [port.hwid, HWID.broadcast()]:
+            logger.info(
+                f"Ignoring packet from {packet.src} for {packet.dst} (not us!)",
+            )
+            return
+        logger.info(
+            "Received "
+            + ("broadcast" if packet.dst == HWID.broadcast() else "unicast")
+            + f" packet from {packet.src}",
+        )
+        self.process_payload(
+            packet.payload,
+            packet.src,
+            packet.dst,
+            port,
+        )
+
     def process_inputs(self):
-        for port in self.ports:
-            packet = port.receive()
-            if packet is not None:
-                if packet.dst not in [port.hwid, HWID.broadcast()]:
-                    logger.info(
-                        f"Ignoring packet from {packet.src} for {packet.dst} (not us!)",
-                    )
-                    continue
-                logger.info(
-                    "Received "
-                    + (
-                        "broadcast"
-                        if packet.dst == HWID.broadcast()
-                        else "unicast"
-                    )
-                    + f" packet from {packet.src}",
-                )
-                self.process_payload(
-                    packet.payload,
-                    packet.src,
-                    packet.dst,
-                    port,
-                )
+        processed = 0
+        has_processed = True
+        while processed < self.process_rate and has_processed:
+            has_processed = False
+            for port in self.ports:
+                if processed >= self.process_rate:
+                    break
+                packet = port.receive()
+                if packet is not None:
+                    self.process_packet(packet, port)
+
+                    has_processed = True
+                    processed += 1
 
     def run_jobs(self):
         pass
