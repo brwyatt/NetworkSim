@@ -11,7 +11,7 @@ from networksim.packet.ip.icmp import ICMPPong
 
 
 class Ping(Application):
-    def __init__(self, device: Device, *args, dst_ip: IPAddr, **kwargs):
+    def __init__(self, device: Device, dst_ip: IPAddr, *args, **kwargs):
         super().__init__(device, *args, **kwargs)
 
         self.dst_ip = dst_ip
