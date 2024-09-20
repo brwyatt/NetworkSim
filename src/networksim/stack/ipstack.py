@@ -119,8 +119,8 @@ class RouteTable:
             if not (
                 (network is None or network == x.network)
                 and (port is None or port == x.port)
-                and (via is None or via == x.via)
-                and (src is None or src == x.src)
+                and (via is None or (x.via is not None and via == x.via))
+                and (src is None or (x.src is not None and src == x.src))
             )
         ]
 
