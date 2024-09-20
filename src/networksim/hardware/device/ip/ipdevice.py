@@ -16,8 +16,9 @@ class IPDevice(Device):
         name: Optional[str] = None,
         port_count: int = 1,
         auto_process: bool = True,
+        process_rate: Optional[int] = None,
     ):
-        super().__init__(name, port_count, auto_process)
+        super().__init__(name, port_count, auto_process, process_rate)
 
         self.ip = IPStack()
 
