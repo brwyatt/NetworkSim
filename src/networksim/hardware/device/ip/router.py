@@ -20,7 +20,7 @@ class Router(IPDevice):
     ):
         super().__init__(name, port_count, auto_process, process_rate)
 
-        self.ip = IPStack()
+        self.ip = IPStack(forward_packets=True)
 
     def process_payload(self, payload, src: HWID, dst: HWID, port: Port):
         if isinstance(payload, self.ip.supported_types):

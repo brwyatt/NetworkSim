@@ -199,8 +199,9 @@ class ProtocolAlreadyBoundException(Exception):
 
 
 class IPStack(Stack):
-    def __init__(self, arp_expire: int = 100):
+    def __init__(self, arp_expire: int = 100, forward_packets: bool = False):
         super().__init__()
+        self.forward_packets = forward_packets
         self.addr_table = ARPTable(arp_expire)
         self.routes = RouteTable()
         self.bound_ips = BoundIPs()
@@ -373,12 +374,13 @@ class IPStack(Stack):
                 pass
 
         route = self.routes.find_route(dst, src=src_bind, port=port)
-        next_hop = route.via
+        next_hop = route.via if route is not None else None
         if next_hop is not None:
             route = self.routes.find_route(next_hop, src=src_bind, port=port)
 
         if route is None:
             logger.error(f"No route to {dst}!")
+            return
 
         src = route.src if src is None else src
         port = route.port
@@ -540,8 +542,22 @@ class IPStack(Stack):
             self.process_arp(packet, src, dst, port)
             return
 
-        if isinstance(packet, IPPacket):
-            self.add_arp(packet.src, src, port)
+        if not isinstance(packet, IPPacket):
+            logger.warning("Received non-IP packet!")
+            return
+
+        self.add_arp(packet.src, src, port)
+
+        if not self.bound_ips.get_binds(addr=packet.dst):
+            logger.info(f"Recieved packet for {dst} - Not us!")
+            if self.forward_packets:
+                logger.info("Forwarding packet!")
+                self.send(
+                    dst=packet.dst,
+                    payload=packet.payload,
+                    src=packet.src,
+                )
+            return
 
         if isinstance(packet.payload, ICMPPacket):
             self.process_icmp(
