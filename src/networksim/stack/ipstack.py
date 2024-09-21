@@ -336,16 +336,30 @@ class IPStack(Stack):
         src: Optional[IPAddr] = None,
         port: Optional[Port] = None,
     ):
-        route = self.routes.find_route(dst, src=src, port=port)
-        while route and route.src is None and route.via is not None:
-            route = self.routes.find_route(route.via, src=src, port=port)
+        src_bind = None
+        if src is not None:
+            try:
+                src_bind = self.bound_ips.get_binds(
+                    addr=src,
+                    port=port,
+                )[0].addr
+            except IndexError:
+                # no bound IP matches, so ignore - might be routing or spoofing
+                pass
+
+        route = self.routes.find_route(dst, src=src_bind, port=port)
+        next_hop = route.via
+        if next_hop is not None:
+            route = self.routes.find_route(next_hop, src=src_bind, port=port)
 
         if route is None:
             logger.error(f"No route to {dst}!")
 
-        src = route.src
+        src = route.src if src is None else src
         port = route.port
-        dst_hwid = self.addr_table.lookup(dst)
+        dst_hwid = self.addr_table.lookup(
+            next_hop if next_hop is not None else dst,
+        )
 
         if dst_hwid is None:
             logger.error(f"Unknown host {dst}! -- Try ARP first!")
