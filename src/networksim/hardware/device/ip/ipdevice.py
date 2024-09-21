@@ -22,6 +22,10 @@ class IPDevice(Device):
 
         self.ip = IPStack()
 
+    def step(self):
+        super().step()
+        self.ip.step()
+
     def handle_connection_state_change(self, port: Port):
         super().handle_connection_state_change(port)
         if not port.connected:

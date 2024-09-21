@@ -188,6 +188,12 @@ class BoundIPs:
         ]
 
 
+QueuedSend = namedtuple(
+    "QueuedSend",
+    ["pending", "dst", "payload", "src", "port"],
+)
+
+
 class ProtocolAlreadyBoundException(Exception):
     pass
 
@@ -200,6 +206,9 @@ class IPStack(Stack):
         self.bound_ips = BoundIPs()
         self.arp_expire = arp_expire
         self.protocol_binds = {}
+        self.arp_request_timeout = 40
+        self.arp_requests = {}
+        self.send_queue = []
 
     @property
     def supported_types(self) -> Tuple[type]:
@@ -238,6 +247,15 @@ class IPStack(Stack):
         except KeyError:
             pass
 
+    def step(self):
+        for addr, timer in list(self.arp_requests.items()):
+            if timer <= 0:
+                del self.arp_requests[addr]
+                # Just delete/clear the queue, but should send errors back
+                self.send_queue = [x for x in self.send_queue if x.dst != addr]
+                continue
+            self.arp_requests[addr] = timer - 1
+
     def get_protocol_callback(
         self,
         packet_type: type,
@@ -252,11 +270,16 @@ class IPStack(Stack):
             ),
         )
 
-    def send_arp_request(self, addr: IPAddr):
+    def send_arp_request(self, addr: IPAddr, force: bool = False):
         route = self.routes.find_route(addr)
         if route is None or route.src is None or route.port is None:
             logger.error(f"Could not find suitible route for {addr}")
             return
+
+        if addr in self.arp_requests:
+            logger.warning(f"ARP already in-flight for {addr}!")
+            if not force:
+                return
 
         route.port.send(
             EthernetPacket(
@@ -270,6 +293,8 @@ class IPStack(Stack):
                 ),
             ),
         )
+
+        self.arp_requests[addr] = self.arp_request_timeout
 
     def send_arp_response(
         self,
@@ -362,7 +387,17 @@ class IPStack(Stack):
         )
 
         if dst_hwid is None:
-            logger.error(f"Unknown host {dst}! -- Try ARP first!")
+            logger.error(f"Unknown host {dst}! -- sending ARP and queing!")
+            self.send_arp_request(dst)
+            self.send_queue.append(
+                QueuedSend(
+                    pending=next_hop if next_hop is not None else dst,
+                    dst=dst,
+                    payload=payload,
+                    src=src,
+                    port=port,
+                ),
+            )
             return
 
         port.send(
@@ -403,6 +438,20 @@ class IPStack(Stack):
     def add_arp(self, src_ip: IPAddr, src: HWID, port: Optional[Port] = None):
         if self.local_source(src_ip, port):
             self.addr_table.add_entry(src_ip, src)
+            try:
+                del self.arp_requests[src_ip]
+            except KeyError:
+                # Not something we were waiting on, so we can skip processing the queue
+                return
+            # attempt to resend any packets waiting on ARPs
+            for queued in [x for x in self.send_queue if x.pending == src_ip]:
+                self.send_queue.remove(queued)
+                self.send(
+                    dst=queued.dst,
+                    payload=queued.payload,
+                    src=queued.src,
+                    port=queued.port,
+                )
 
     def process_arp(
         self,
