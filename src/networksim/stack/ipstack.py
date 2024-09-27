@@ -190,7 +190,7 @@ class BoundIPs:
 
 QueuedSend = namedtuple(
     "QueuedSend",
-    ["pending", "dst", "payload", "src", "port"],
+    ["pending", "dst", "payload", "src", "port", "ttl"],
 )
 
 
@@ -361,6 +361,7 @@ class IPStack(Stack):
         payload,
         src: Optional[IPAddr] = None,
         port: Optional[Port] = None,
+        ttl: Optional[int] = None,
     ):
         src_bind = None
         if src is not None:
@@ -400,6 +401,7 @@ class IPStack(Stack):
                     payload=payload,
                     src=src,
                     port=port,
+                    ttl=ttl,
                 ),
             )
             return
@@ -412,6 +414,7 @@ class IPStack(Stack):
                     dst=dst,
                     src=src,
                     payload=payload,
+                    ttl=ttl,
                 ),
             ),
         )
@@ -455,6 +458,7 @@ class IPStack(Stack):
                     payload=queued.payload,
                     src=queued.src,
                     port=queued.port,
+                    ttl=queued.ttl,
                 )
 
     def process_arp(
@@ -569,10 +573,14 @@ class IPStack(Stack):
             logger.info(f"Recieved packet for {dst} - Not us!")
             if self.forward_packets:
                 logger.info("Forwarding packet!")
+                if packet.ttl <= 0:
+                    logger.warning("Dropping packet with TTL of 0")
+                    return
                 self.send(
                     dst=packet.dst,
                     payload=packet.payload,
                     src=packet.src,
+                    ttl=packet.ttl - 1,
                 )
             return
 
