@@ -10,6 +10,14 @@ class IPAddr:
     def __init__(self, byte_value: bytes):
         self.byte_value = byte_value
 
+    @classmethod
+    def broadcast(cls) -> bytes:
+        return cls(
+            byte_value=bytes(
+                [255 for _ in range(0, IPAddr.length_bytes)],
+            ),
+        )
+
     @property
     def byte_value(self) -> bytes:
         return self._byte_value

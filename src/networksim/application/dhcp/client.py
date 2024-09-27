@@ -144,14 +144,7 @@ class DHCPClient(Application):
                         dst=HWID.broadcast(),
                         src=port.hwid,
                         payload=IPPacket(
-                            dst=IPAddr(
-                                byte_value=bytes(
-                                    [
-                                        255
-                                        for _ in range(0, IPAddr.length_bytes)
-                                    ],
-                                ),
-                            ),
+                            dst=IPAddr.broadcast(),
                             src=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
                             payload=UDP(
                                 dst_port=67,
@@ -179,14 +172,7 @@ class DHCPClient(Application):
                         dst=HWID.broadcast(),
                         src=port.hwid,
                         payload=IPPacket(
-                            dst=IPAddr(
-                                byte_value=bytes(
-                                    [
-                                        255
-                                        for _ in range(0, IPAddr.length_bytes)
-                                    ],
-                                ),
-                            ),
+                            dst=IPAddr.broadcast(),
                             src=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
                             payload=UDP(
                                 dst_port=67,
