@@ -21,15 +21,7 @@ class Ping(Application):
         self.step_count = 0
         self.in_flight: Dict[int, int] = {}  # { seq_id: expire_time }
 
-        self.route = self.device.ip.routes.find_route(dst=self.dst_ip)
-        # local destination may be a router!
-        self.route_dst = (
-            self.dst_ip if self.route.via is None else self.route.via
-        )
-        self.arp_timer = 0
-
-        self.arp_timeout = 40
-        self.ping_timeout = 60
+        self.ping_timeout = 120
 
         self.max_in_flight = 1
 
@@ -61,21 +53,6 @@ class Ping(Application):
                     pass
             else:
                 self.in_flight[seq] = exp + 1
-
-        if self.device.ip.addr_table.lookup(self.route_dst) is None:
-            if self.arp_timer >= self.arp_timeout:
-                self.log.append(
-                    f"{self.step_count}: ARP lookup timed out! Host unreachable!",
-                )
-                self.arp_timer = 0
-            if self.arp_timer == 0:
-                self.log.append(
-                    f"{self.step_count}: Host unknown, sending ARP",
-                )
-                # Send ARP for local network destination - destination host or router
-                self.device.ip.send_arp_request(self.route_dst)
-            self.arp_timer += 1
-            return
 
         if len(self.in_flight) < self.max_in_flight:
             self.sequence += 1
