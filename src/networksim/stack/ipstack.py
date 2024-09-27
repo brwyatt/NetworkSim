@@ -135,7 +135,7 @@ class RouteTable:
         for route in self.routes:
             if (
                 route.network.in_network(dst)
-                and (src is None or route.src == src)
+                and (src is None or route.src is None or route.src == src)
                 and (port is None or route.port == port)
             ):
                 found_route = route
@@ -382,18 +382,20 @@ class IPStack(Stack):
             logger.error(f"No route to {dst}!")
             return
 
+        next_hop = next_hop if next_hop is not None else dst
+
         src = route.src if src is None else src
         port = route.port
-        dst_hwid = self.addr_table.lookup(
-            next_hop if next_hop is not None else dst,
-        )
+        dst_hwid = self.addr_table.lookup(next_hop)
 
         if dst_hwid is None:
-            logger.error(f"Unknown host {dst}! -- sending ARP and queing!")
-            self.send_arp_request(dst)
+            logger.error(
+                f"Unknown host {next_hop}! -- sending ARP and queing!",
+            )
+            self.send_arp_request(next_hop)
             self.send_queue.append(
                 QueuedSend(
-                    pending=next_hop if next_hop is not None else dst,
+                    pending=next_hop,
                     dst=dst,
                     payload=payload,
                     src=src,
@@ -548,7 +550,22 @@ class IPStack(Stack):
 
         self.add_arp(packet.src, src, port)
 
-        if not self.bound_ips.get_binds(addr=packet.dst):
+        if (
+            self.bound_ips.get_binds(
+                port=port,
+            )  # don't forward if we don't have an IP
+            and packet.dst
+            not in (
+                [IPAddr.broadcast()]
+                + [
+                    x.network.broadcast_addr
+                    for x in self.bound_ips.get_binds()
+                ]
+            )  # Filter out broadcast packets
+            and not self.bound_ips.get_binds(
+                addr=packet.dst,
+            )  # Filter out self
+        ):
             logger.info(f"Recieved packet for {dst} - Not us!")
             if self.forward_packets:
                 logger.info("Forwarding packet!")
