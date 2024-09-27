@@ -39,6 +39,11 @@ class ICMPPing(ICMPPacket):
         self.sequence = sequence
         self.payload = payload
 
+    def __str__(self):
+        return (
+            f"ID={self.identifier},SEQ={self.sequence},PAYLOAD={self.payload}"
+        )
+
 
 class ICMPPong(ICMPPacket):
     def __init__(
@@ -52,3 +57,8 @@ class ICMPPong(ICMPPacket):
         self.identifier = identifier
         self.sequence = sequence
         self.payload = payload
+
+    def __str__(self):
+        return (
+            f"ID={self.identifier},SEQ={self.sequence},PAYLOAD={self.payload}"
+        )
