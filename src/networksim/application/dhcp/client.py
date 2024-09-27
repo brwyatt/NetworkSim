@@ -33,7 +33,7 @@ class DHCPClient(Application):
             ports = device.ports
         self.ports = ports
 
-        self.timeout = 50
+        self.timeout = 60
 
         self.leases = {}
         for port in ports:

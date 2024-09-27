@@ -8,7 +8,7 @@ from networksim.packet import Packet
 
 
 class CAMEntry:
-    def __init__(self, hwid: HWID, port: Port, expiration: int = 100):
+    def __init__(self, hwid: HWID, port: Port, expiration: int = 200):
         self.hwid = hwid
         self.port = port
         self.expiration = expiration
@@ -18,7 +18,7 @@ class CAMEntry:
 
 
 class CAMTable:
-    def __init__(self, expiration: int = 100):
+    def __init__(self, expiration: int = 200):
         self.table = {}
         self.expiration = expiration
 
@@ -59,7 +59,7 @@ class Switch(Device):
         self,
         name: Optional[str] = None,
         port_count: int = 4,
-        cam_expire: int = 100,
+        cam_expire: int = 200,
         forward_capacity: Optional[int] = None,
     ):
         super().__init__(

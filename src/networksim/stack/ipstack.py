@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ARPEntry:
-    def __init__(self, addr: IPAddr, hwid: HWID, expiration: int = 100):
+    def __init__(self, addr: IPAddr, hwid: HWID, expiration: int = 250):
         self.addr = addr
         self.hwid = hwid
         self.expiration = expiration
@@ -35,7 +35,7 @@ class ARPEntry:
 
 
 class ARPTable:
-    def __init__(self, expiration: int = 100):
+    def __init__(self, expiration: int = 250):
         self.table = {}
         self.expiration = expiration
 
@@ -199,7 +199,7 @@ class ProtocolAlreadyBoundException(Exception):
 
 
 class IPStack(Stack):
-    def __init__(self, arp_expire: int = 100, forward_packets: bool = False):
+    def __init__(self, arp_expire: int = 250, forward_packets: bool = False):
         super().__init__()
         self.forward_packets = forward_packets
         self.addr_table = ARPTable(arp_expire)
