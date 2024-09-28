@@ -81,7 +81,7 @@ cable_A_SW = Cable(A[0], SW[0])
 sim.add_cable(cable_A_SW)
 ```
 
-Having the simulation create the cable and connect to the first available (unused) port on a device for you:
+Having the simulation create the cable and connect to the first available (unused) port on a device for you (which will, additionally, add the devices to the simulation if they aren't already):
 ```
 sim.connect_devices(B, SW)
 ```
@@ -104,6 +104,13 @@ Advancing the simulation 4 more steps will show a packet on the inbound queue fo
 B[0].receive().payload
 ```
 
+The list of all devices in the simulation can be accessed with:
+
+```
+sim.devices
+```
+
+## Additional devices
 In addition to `Device`s and `Switch`es, there are also:
 
 * `IPDevice`
@@ -126,3 +133,42 @@ In addition to `Device`s and `Switch`es, there are also:
 (These are still a WIP)
 * [Ethernet Basics](./docs/Ethernet_Basics.md)
 * [IP Basics](./docs/IP_Basics.md)
+
+## Example networks
+### Tier-3 Network
+Creates a Core switch, 2 Aggregation switches connected to the core, 4 Access switches split between the Aggregation switches, a DHCP server (connected to an Aggregation switch with increased bandwidth), and 50 clients randomly connected to the Access switches.
+
+```
+              Core
+              /  \
+         -----    ------
+        |               |
+      Agg1 - DHCP     Agg2
+      /  \            /  \
+  Acc1    Acc2    Acc3    Acc4
+ / | \   / | \   / | \   / | \
+A  B  C D  E  F G  H  I J  K  L
+```
+
+To use and play with this network:
+
+```
+from networksim.examples.tier3_network import sim
+```
+
+### Routing
+Creates two networks connected with a router. Each network has a switch, a DHCP server, and 2 clients.
+
+```
+         Router
+        /      \
+     SW1        SW2
+    / | \      / | \
+DHCP  A1 A2  B1 B2  DHCP
+```
+
+To use and play with this network:
+
+```
+from networksim.examples.simple_routing import sim
+```
