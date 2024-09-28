@@ -34,7 +34,7 @@ class DHCPServer(Application):
         device: Device,
         network: IPNetwork,
         *args,
-        lease_time: int = 500,
+        lease_time: int = 5000,
         range_start: Optional[IPAddr] = None,
         range_end: Optional[IPAddr] = None,
         router: Optional[IPAddr] = None,
