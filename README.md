@@ -1,426 +1,128 @@
 # NetworkSim
 Educational Network Simulation Tool
 
-## Basic Usage (Ethernet)
-Example setup of a simulation:
+## Overview
+This project was started as a way to both learn and teach how networks work at the protocol level. As such, there are some "interesting" deviations from reality, particularly on the "physical" layer and time, it is a _simulation_, after all. No code in here should be considered "production quality", and should be expected to contain vulnerabilities that have been patched in real-world implementations (but these could be fun to "exploit" in the simulation).
+
+## Limitations (Deviations from reality)
+* The time units analogue in the simulation are "steps".
+  * Cable lengths are measured in the number of "steps" for packets to taverse the length of the cable
+  * Port buffers are based on the number of "steps" worth of packets that can be stored (relative to their bandwidth)
+* Cables (Physical layer oddities)
+  * These decisions were made in order to make it easy to simulate/control and keep the focus on the higher level protocols, and the actual implementation here actually doesn't matter, as the protocols are intended to be run over different physical layers, and do in the real world (2- or 4-pair copper CAT cables, Multi-/Single-Mode fiber, and encapsulated protocols such as GPON (fiber internet), DOCSIS (cable internet), and VPN)
+  * Unlike the real world, packets "exist" on the cable in discrete units (rather than conducting electical signals between ends)
+  * Cables are "active" in that they are actually the entity in the simulation pulling packets off of port outbound buffers and placing them on port inbound buffers, rather than just being a conduit for electrical signals or light transmitted from the port and received on the other end.
+  * the "bandwidth" is the number of packets per "step" along the cable. This would be most analagous to the higher frequency of CAT cables that higher-rated cables (and ports) use to achieve higher bandwidth.
+* Packets are the fundamental unit
+  * Unlike the real world, packets are transmitted as a single discrete unit, irrelevant of size.
+  * Packets are also structured Python objects, for ease of inspection and exploration/understanding of protocols, rather than being raw binary data. The idea is to teach "IP Packets are encapsulated in an Ethernet packet have a source and destination IP address" rather than "these x bytes of the IP data frame portion of the packet contains y data".
+* Device packet processing
+  * By default, devices are configured to be able to read the combined bandwidth of all ports every step. This will, by default, ensure the inbound buffers can never fill. This can be tweaked to slow the processing of packets to allow for "overwhelming" a host and dropping packets.
+    * On switches, this default can easily lead to overflowing of outbound buffers on popular destination ports, unless those are manually increased.
+    * For simplicity, "applications" listening on a host, can process and respond to a packet (or multiple packets) within the same step, without any kind of time delay for processing like the real world would normally see.
+
+## TODO
+Known missing things that might get implemented
+
+* ICMP Error messages - Currently missing, both generating/sending and processing received errors
+* TCP - Requires a bit more tracking, still making sure the basics are all worked out
+* VLANs - May require some rework of some parts to support, but likely worth implementing as the concepts are pretty useful
+* (R)STP - Might be out of scope. Lets be honest, though, if you know what this is, this really isn't for you anyway. 😉
+* Port bonding and LACP - might be fun, might also be out of scope (at least short-term)
+
+## Basic Usage
+
+Note: This section is intended to be used as a quick "how to use the simulator", and will be light on explaining networking concepts.
+
+Start by either running Python interactively or (preferred) installing and running iPython to get an interactive shell to run the simulation.
+
+The `Simulation` object is what controls all simulation activity.
+
+```
+from networksim.simulation import Simulation
+
+sim = Simulation()
+```
+
+We can progress the simulation's time with the `step()` function, which takes an optional integer parameter for number of steps (default is 1).
+
+```
+sim.setp(20)
+```
+
+But this doesn't do much at present, as we don't have any devices in the simulaton or any packets. We can add a couple Ethernet `Device`s (devices that can only speak the low-level Ethernet protocol) and a `Switch` (a networking device that moves packets within a network based on low-level Ethernet addresses) to the simulation
 
 ```
 from networksim.hardware.device import Device
 from networksim.hardware.device.infrastructure.switch import Switch
-from networksim.packet.ethernet import EthernetPacket
-from networksim.simulation import Simulation
-
-
-sim = Simulation()
 
 A = Device(name="A")
 B = Device(name="B")
-C = Device(name="C")
-
-SW1 = Switch(name="SW1")
-SW2 = Switch(name="SW2")
+SW = Switch(name="SW")
 
 sim.add_device(A)
 sim.add_device(B)
-sim.add_device(C)
-sim.add_device(SW1)
-sim.add_device(SW2)
-
-sim.connect_devices(SW1, SW2)
-sim.connect_devices(A, SW1)
-sim.connect_devices(B, SW1)
-sim.connect_devices(C, SW2)
+sim.add_device(SW)
 ```
 
-This creates a simple network with 3 devices with 1 port each and 2 switches with 4 ports. All ports will get randomized hardware IDs. The switches are connected to each other with cables of length 3 (measured in simulation steps), the first two devices are on the first switch, and the 3rd device is on the second switch.
-
-Essentially, it looks like this:
+By default, `Device`s have a single port, and `Switch`es have 4. You can see the current state of the simulation, and see that the devices have been added with the `show()` function, which will output all devices and their ports (including their hardware ("MAC") addresses), as well as their in/out queue sizes.
 
 ```
-   SW1 -- SW2
-   / \     |
-  A   B    C
+sim.show()
 ```
 
-The simulation does not progress unless `sim.step()` is called. When the simulation progresses, each cable will place packets at the end of the cable's lenth onto the corresponding destination port's inbound queue, then progress remainling packets along the cable's distance by 1, then will read one packetfrom the outbound queues of the connected ports to the start of the cable's length. Next each switch will read from each of it's port's inbound queues, and forward the 1 packet to the outbound queue of the destination port (or ports, if the hardware ID is not found in the CAM table).
+They aren't connected yet, however, we need to connect them, which we can do two ways:
 
-The current state of all packets and devices can be viewed with `sim.show()`. This will show the status (size) of the inbound and outbound queues of all ports on all devices, the status of all packets traveling along cables, and the contents of the CAM tables on all switches.
-
-For example:
+Manually creating a cable, connecting it to the device ports, and adding it to the simulation:
 ```
-DEVICES (queue in | queue out):
- * A:
-   * Port[0] (c6:ad:c9:ba:60:01): 0 | 0
- * B:
-   * Port[0] (88:76:b9:9a:1e:01): 0 | 0
- * C:
-   * Port[0] (8c:5c:af:15:94:01): 0 | 0
- * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
- * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
-CABLES (a->b | b->a):
- * SW1[0]/SW2[0]: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * A[0]/SW1[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * B[0]/SW1[2]: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * C[0]/SW2[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
-CAM TABLES:
- * SW1
-   * Port[0]: []
-   * Port[1]: []
-   * Port[2]: []
-   * Port[3]: []
- * SW2
-   * Port[0]: []
-   * Port[1]: []
-   * Port[2]: []
-   * Port[3]: []
-ARP TABLES:
-ROUTE TABLES:
+from networksim.hardware.cable import Cable
+
+cable_A_SW = Cable(A[0], SW[0])
+sim.add_cable(cable_A_SW)
 ```
 
-A packet can be sent from A to B by placing it on the outbound queue of A's port and giving it a destination of B's port hardware ID. This can be done by calling either `outbound_write(packet)` or the more convenient `send(packet)`. For example:
-
+Having the simulation create the cable and connect to the first available (unused) port on a device for you:
 ```
-A[0].send(EthernetPacket(dst=B[0].hwid, payload="TEST A->B"))
-```
-
-After advancing the state of the simulation 8 steps (1 for it to go from the outbound queue to the cable, 2 to traverse the cable, 1 more to go from the cable to the switch, which processes it from the inbound queue to the outbound queues to B and the other switch (assuming B is not in the CAM tables), then 1 more to get placed on the cable to B, 2 to traverse the cable, and 1 more to get to B's inbound queue) the packet can be read from the port on B with `inbound_read()` or the more convenient `receive()`. For example:
-
-```
-str(B[0].receive())
+sim.connect_devices(B, SW)
 ```
 
-After sending packets from all devices, the state will look something like this:
+After that, both devices should be connected to the switch. Both methods, by default, will create cables of length 3 with a bandwidth of 1. You can check the new state with `sim.show()` and see the cables connecting the devices to the switch, as well as see any packets traveling along the cables (which should be none).
+
+Now that we have both devices connected to the switch, they should be able to send Ethernet packets to each other. We can send a packet from A to B with the following:
 
 ```
-DEVICES (queue in | queue out):
- * A:
-   * Port[0] (c6:ad:c9:ba:60:01): 1 | 0
- * B:
-   * Port[0] (88:76:b9:9a:1e:01): 1 | 0
- * C:
-   * Port[0] (8c:5c:af:15:94:01): 3 | 0
- * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
- * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 1
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
-CABLES (a->b | b->a):
- * SW1[0]/SW2[0]: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * A[0]/SW1[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * B[0]/SW1[2]: ['None', 'None', 'None'] | ['None', 'None', 'None']
- * C[0]/SW2[1]: ['None', 'None', 'None'] | ['None', 'None', 'None']
-CAM TABLES:
- * SW1
-   * Port 0: ['8c:5c:af:15:94:01']
-   * Port 1: ['c6:ad:c9:ba:60:01']
-   * Port 2: ['88:76:b9:9a:1e:01']
-   * Port 3: []
- * SW2
-   * Port 0: ['c6:ad:c9:ba:60:01', '88:76:b9:9a:1e:01']
-   * Port 1: ['8c:5c:af:15:94:01']
-   * Port 2: []
-   * Port 3: []
-ARP TABLES:
-ROUTE TABLES:
+A[0].send(EthernetPacket(dst=B[0].hwid, payload="Hello B!"))
 ```
 
-## Using IP protocols
+And a `sim.show()` will show that Port[0] on device A has a packet on the outbound queue. If we advance the simulation by 1 (`sim.step()`), we can see the packet on the cable between A and the switch by running `show()` again.
 
-Setup is similar, but uses IPDevice in order to enable the IP stack:
+If we advance the simulation 3 more times (`sim.step(3)`), we can see a packet on the outbound queue of Port[1] of SW. As well as an entry for A's hardware address in the switch's CAM table (more on that later).
 
-```
-from networksim.hardware.device.infrastructure.switch import Switch
-from networksim.hardware.device.ip.ipdevice import IPDevice
-from networksim.ipaddr import IPAddr, IPNetwork
-from networksim.simulation import Simulation
-
-
-sim = Simulation()
-
-A = IPDevice(name="A")
-B = IPDevice(name="B")
-C = IPDevice(name="C")
-
-SW1 = Switch(name="SW1")
-SW2 = Switch(name="SW2")
-
-sim.add_device(A)
-sim.add_device(B)
-sim.add_device(C)
-sim.add_device(SW1)
-sim.add_device(SW2)
-
-sim.connect_devices(SW1, SW2)
-sim.connect_devices(A, SW1)
-sim.connect_devices(B, SW1)
-sim.connect_devices(C, SW2)
-```
-
-Using IP addressing comes with two new requirements. First, we must bind an IP address to a device port, and then we must be able to map IP addresses of others to the hardware address on the LAN to send the packets to.
-
-To bind an IP address to Device "A"'s port:
+Advancing the simulation 4 more steps will show a packet on the inbound queue for B. Unlike `Switch`es (and, later, `IPDevice`s), basic Ethernet `Device`s don't automatically process packets from their queue by default. But we can manually read the packet from the port ourselves.
 
 ```
-A.ip.bind(IPAddr.from_str("192.168.1.5"), IPNetwork(IPAddr.from_str("192.168.1.0"), 24), A[0])
+B[0].receive().payload
 ```
 
-This will register this address and network in the IP stack to the port on the device, and trigger the device to send a Gratuitous ARP, which is a broadcast message to other hosts on the same Ethernet segment to tell them the hardware address that the IP belongs to. When a device receives an ARP or IP packet from another device with an IP in a network it is bound to, it will keep track of it's hardware address within it's ARP table, similar to how a switch tracks the hardware address and port mapping in it's CAM table.
+In addition to `Device`s and `Switch`es, there are also:
 
-If we step the simulation forward by 12 with `sim.step(12)` (so the GARP from A can reach Device B (8) that is on the same switch and Device C (12) attached to the other switch), we can see that both other Devices do not track this mapping yet using `sim.show()`:
+* `IPDevice`
+  * Basic network device with an IP stack, supports IP networking.
+  * Import:
+    * ```
+      from networksim.hardware.device.ip.ipdevice import IPDevice
+      ```
+* `Router`
+  * Comes with an IP stack and can move packets between IP networks
+  * Imports (both are equivelant):
+    * ```
+      from networksim.hardware.device.ip.router import Router
+      ```
+    * ```
+      from networksim.hardware.device.infrastructure.router import Router
+      ```
 
-```
-DEVICES (queue in | queue out):
- * A:
-   * Port[0] (c0:db:77:20:c2:01): 0 | 0
-     * 192.168.1.5/24
- * B:
-   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
- * C:
-   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
- * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
- * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
-CABLES (a->b | b->a):
- * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * B[0]/SW1[2]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
-CAM TABLES:
- * SW1
-   * Port[0]: []
-   * Port[1]: ['c0:db:77:20:c2:01']
-   * Port[2]: []
-   * Port[3]: []
- * SW2
-   * Port[0]: ['c0:db:77:20:c2:01']
-   * Port[1]: []
-   * Port[2]: []
-   * Port[3]: []
-ARP TABLES:
- * A
- * B
- * C
-ROUTE TABLES:
- * A
-   * 192.168.1.0/24 dev c0:db:77:20:c2:01 src 192.168.1.5
- * B
- * C
-```
-
-We can bind addresses to B and C to see how A behaves, with B in a different subnet and C with two addresses bound, one for each subnet:
-
-```
-B.ip.bind(IPAddr.from_str("192.168.0.10"), IPNetwork(IPAddr.from_str("192.168.0.0"), 24), B[0])
-C.ip.bind(IPAddr.from_str("192.168.1.15"), IPNetwork(IPAddr.from_str("192.168.1.15"), 24), C[0])
-C.ip.bind(IPAddr.from_str("192.168.0.20"), IPNetwork(IPAddr.from_str("192.168.0.20"), 24), C[0])
-```
-
-Then step the simulation forward 13 times with `sim.step(13)` (for the extra packet queued from C), and we can see how the ARP tables and IP address binds look:
-
-```
-DEVICES (queue in | queue out):
- * A:
-   * Port[0] (c0:db:77:20:c2:01): 0 | 0
-     * 192.168.1.5/24
- * B:
-   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
-     * 192.168.0.10/24
- * C:
-   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
-     * 192.168.1.15/24
-     * 192.168.0.20/24
- * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
- * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
-CABLES (a->b | b->a):
- * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * B[0]/SW1[2]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
-CAM TABLES:
- * SW1
-   * Port[0]: ['27:9a:e6:ca:44:01']
-   * Port[1]: ['c0:db:77:20:c2:01']
-   * Port[2]: ['56:8e:0a:50:aa:01']
-   * Port[3]: []
- * SW2
-   * Port[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
-   * Port[1]: ['27:9a:e6:ca:44:01']
-   * Port[2]: []
-   * Port[3]: []
-ARP TABLES:
- * A
-   * 192.168.1.15: 27:9a:e6:ca:44:01
- * B
-   * 192.168.0.20: 27:9a:e6:ca:44:01
- * C
-   * 192.168.0.10: 56:8e:0a:50:aa:01
-ROUTE TABLES:
- * A
-   * 192.168.1.0/24 dev c0:db:77:20:c2:01 src 192.168.1.5
- * B
-   * 192.168.0.0/24 dev 56:8e:0a:50:aa:01 src 192.168.0.10
- * C
-   * 192.168.1.0/24 dev 27:9a:e6:ca:44:01 src 192.168.1.15
-   * 192.168.0.0/24 dev 27:9a:e6:ca:44:01 src 192.168.0.20
-```
-
-It is important to note that while A knows about C now, C does not know about A, even though it has an address in the same subnet as one of C's bound addresses. This is because C received the GARP from A before it bound it's IP to the interface. Both B and C know each other's addresses, as they bound their IP addresses before they received each other's GARP broadcasts.
-
-C can either wait to receive another GARP from A, or any IP packet from A, or C can query the network and ask for the owner of the IP address, if it was wanting to send an IP packet. To query the network for "192.168.1.5", C can send an ARP Request in order to generate an ARP Reply from A. This packet will be broadcast to all devices on the same Ethernet segment:
-
-```
-C.ip.send_arp_request(IPAddr.from_str("192.168.1.5"))
-```
-
-After stepping the simulation 24 times (12 for the request to reach A, 12 more for the response back to C):
-
-```
-DEVICES (queue in | queue out):
- * A:
-   * Port[0] (c0:db:77:20:c2:01): 0 | 0
-     * 192.168.1.5/24
- * B:
-   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
-     * 192.168.0.10/24
- * C:
-   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
-     * 192.168.1.15/24
-     * 192.168.0.20/24
- * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
- * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
-CABLES (a->b | b->a):
- * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * B[0]/SW1[2]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
- * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
-CAM TABLES:
- * SW1
-   * Port[0]: ['27:9a:e6:ca:44:01']
-   * Port[1]: ['c0:db:77:20:c2:01']
-   * Port[2]: ['56:8e:0a:50:aa:01']
-   * Port[3]: []
- * SW2
-   * Port[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
-   * Port[1]: ['27:9a:e6:ca:44:01']
-   * Port[2]: []
-   * Port[3]: []
-ARP TABLES:
- * A
-   * 192.168.1.15: 27:9a:e6:ca:44:01
- * B
-   * 192.168.0.20: 27:9a:e6:ca:44:01
- * C
-   * 192.168.0.10: 56:8e:0a:50:aa:01
-   * 192.168.1.5: c0:db:77:20:c2:01
-ROUTE TABLES:
- * A
-   * 192.168.1.0/24 dev c0:db:77:20:c2:01 src 192.168.1.5
- * B
-   * 192.168.0.0/24 dev 56:8e:0a:50:aa:01 src 192.168.0.10
- * C
-   * 192.168.1.0/24 dev 27:9a:e6:ca:44:01 src 192.168.1.15
-   * 192.168.0.0/24 dev 27:9a:e6:ca:44:01 src 192.168.0.20
-```
-
-We can do some simple Ping tests using the ping application to send ICMP Echo Request packets and handle ICMP Echo Reply packets:
-
-```
-from networksim.application.ping import Ping
-
-A.add_application(Ping, "ping")
-A.start_application("ping", IPAddr.from_str("192.168.1.15"))
-```
-
-And stepping through the simulation for a bit (for example, 100 times), we can check the process log:
-
-```
-A.process_list[1].log
-```
-
-...and see the following:
-
-```
-['1: Sending Ping with seq=1',
- '24: 192.168.1.5 recieved PONG from 192.168.1.15 seq=1: 24',
- '25: Sending Ping with seq=2',
- '49: 192.168.1.5 recieved PONG from 192.168.1.15 seq=2: 24',
- '50: Sending Ping with seq=3',
- '74: 192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24',
- '75: Sending Ping with seq=4',
- '99: 192.168.1.5 recieved PONG from 192.168.1.15 seq=4: 24',
- '100: Sending Ping with seq=5',
-```
-
-This application will also send an ARP request if the host is not already known. If we stop the Ping (`A.stop_application(1)`) then step the simulation forward enough for the ARP table entries to expire, we can then start another Ping as before, and check it's logs (note, the process ID will now be 2, instead of 1, as this ID always increments) and step the simulation forward again to see the result in the logs:
-
-```
-['1: Host unknown, sending ARP',
- '26: Sending Ping with seq=1',
- '50: 192.168.1.5 recieved PONG from 192.168.1.15 seq=1: 24',
- '51: Sending Ping with seq=2',
- '75: 192.168.1.5 recieved PONG from 192.168.1.15 seq=2: 24',
- '76: Sending Ping with seq=3',
- '100: 192.168.1.5 recieved PONG from 192.168.1.15 seq=3: 24']
-```
-
-### DHCP
-Instead of assigning static IP addresses, DHCP can be used. One device must have a static IP address to act as the DHCP server. The DHCP Server application can be started with:
-
-```
-from networksim.application.dhcp.server import DHCPServer
-
-dhcp_server.add_application(DHCPServer, "dhcp_server")
-dhcp_server.start_application(
-    "dhcp_server",
-    network=dhcp_server.ip.bound_ips.get_binds(
-        port=dhcp_server[0],
-    )[0].network,
-)
-```
-
-This server will start responding to DHCP requests from clients on the network, which can then be started with the following for each device:
-
-```
-from networksim.application.dhcp.client import DHCPClient
-
-A.add_application(DHCPClient, "dhcp_client")
-A.start_application("dhcp_client")
-```
-
-This will start the DHCP Client for every port on the device (alternatively, a list of ports can be passed when starting the application if only specific ports are desired for DHCP). For each connected port, the DHCP Client will start sending DHCPDiscover messages and begin the process of getting an IP address from the DHCP Server, which is a 2-step process, with each step being a query from the client and a reply from the server (DHCPDiscover->DHCPOffer, DHCPRequest->DHCPAck), at which point the client will bind the issued IP to the port, and periodically renew it based on the renewal, rebind, and expiration times.
+## Tutorials/Lessons
+(These are still a WIP)
+* [Ethernet Basics](./docs/Ethernet_Basics.md)
+* [IP Basics](./docs/IP_Basics.md)
