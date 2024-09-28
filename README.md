@@ -133,6 +133,7 @@ In addition to `Device`s and `Switch`es, there are also:
 (These are still a WIP)
 * [Ethernet Basics](./docs/Ethernet_Basics.md)
 * [IP Basics](./docs/IP_Basics.md)
+* [Routing Basics](./docs/Routing_Basics.md)
 
 ## Example networks
 ### Tier-3 Network
