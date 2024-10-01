@@ -1,7 +1,7 @@
 # Routing Basics
 Ethernet works well for things that are relatively nearby, and can also be noisy when switches flood their ports when a Hardware address is unknown, as this propagates through all switches on the network. IP networking allows us to break up these networks into logical groups, called "subnets". These subnets, if connected to other networks, can define a default address to handle traffic for addresses not part of the local subnet, this is called a "router".
 
-This default address is reffered to as the "default route" and is often notated as the "0.0.0.0/0" network which will match any destination that doesn't match another network route (such as "192.168.0.1/24") that is more specific/narrow. This can be manually defined (in the case of a static IP network) or provided by the DHCP server.
+This default address is referred to as the "default route" and is often notated as the "0.0.0.0/0" network which will match any destination that doesn't match another network route (such as "192.168.0.1/24") that is more specific/narrow. This can be manually defined (in the case of a static IP network) or provided by the DHCP server.
 
 Lets start by creating two separate networks, one with static IPs, one using DHCP:
 
@@ -70,13 +70,13 @@ DHCP_2.start_application(
 )
 ```
 
-If we check the simulation state now (`sim.show()`), and check the route tables, we can see that A has a route for it's local network, the DHCP server has a route for it's local network, the router has routes for BOTH networks, and B has none, as we haven't stepped the simulation for it to get it's configuration from the DHCP server. So do that now.
+If we check the simulation state now (`sim.show()`), and check the route tables, we can see that A has a route for its local network, the DHCP server has a route for its local network, the router has routes for BOTH networks, and B has none, as we haven't stepped the simulation for it to get its configuration from the DHCP server. So do that now.
 
 ```
 sim.step(34)
 ```
 
-And now we can see that B has 2 routes, one for it's local network, and another default route pointing to the router's IP on it's local subnet. But notice that A does not have a default route. This means that B can send IP packets to A, but A doesn't know where to send packets to B. We can see this by trying to ping from B to A:
+And now we can see that B has 2 routes, one for its local network, and another default route pointing to the router's IP on its local subnet. But notice that A does not have a default route. This means that B can send IP packets to A, but A doesn't know where to send packets to B. We can see this by trying to ping from B to A:
 
 ```
 from networksim.application.ping import Ping
@@ -101,7 +101,7 @@ sim.step(500)
 B.process_list[2].log
 ```
 
-To resolve this, we just need to tell A to use the router for traffic off it's local network:
+To resolve this, we just need to tell A to use the router for traffic off its local network:
 
 ```
 A.ip.routes.add_route(
@@ -111,7 +111,7 @@ A.ip.routes.add_route(
 )
 ```
 
-And we can see with `sim.show()` that it has a default route, similar to B, but pointing to the IP of the router on it's own network. And if we step the simulation forward again, we can see B starts to receive replies.
+And we can see with `sim.show()` that it has a default route, similar to B, but pointing to the IP of the router on its own network. And if we step the simulation forward again, we can see B starts to receive replies.
 
 ```
 sim.step(500)
