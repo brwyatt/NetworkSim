@@ -7,13 +7,13 @@ from networksim.simulation import Simulation
 
 
 class ToggleFrame(tk.Frame):
-    def __init__(self, master=None, title="TOGGLE"):
+    def __init__(self, master=None, title="TOGGLE", show_default=False):
         super().__init__(master=master)
 
         bg_color = "blue"
 
-        self.show = tk.IntVar()
-        self.show.set(0)
+        # Invert, because we render by calling `toggle()`
+        self.show = not show_default
 
         self.columnconfigure(0, weight=1)
 
@@ -26,17 +26,14 @@ class ToggleFrame(tk.Frame):
         self.title_frame.grid(row=0, column=0, sticky="NEW")
         self.title_frame.columnconfigure(0, weight=1)
 
-        self.title_text = tk.Label(self.title_frame, text=title, bg=bg_color)
-        self.title_text.grid(row=0, column=0, sticky="W")
-
-        self.toggle_button = tk.Checkbutton(
+        self.title_button = tk.Button(
             self.title_frame,
-            text="+",
-            variable=self.show,
-            command=self.toggle,
+            text="* " + title,
             bg=bg_color,
+            anchor="w",
+            command=self.toggle,
         )
-        self.toggle_button.grid(row=0, column=1, sticky="E")
+        self.title_button.grid(row=0, column=0, sticky="EW")
 
         self.content_holder = tk.Frame(self, bg=bg_color)
         self.content_holder.columnconfigure(1, weight=1)
@@ -53,12 +50,15 @@ class ToggleFrame(tk.Frame):
         self.toggle()
 
     def toggle(self):
-        if bool(self.show.get()):
+        self.show = not self.show
+        button_text = list(self.title_button.cget("text"))
+        if self.show:
             self.content_holder.grid(row=1, column=0, sticky="NSEW")
-            self.toggle_button.configure(text="-")
+            button_text[0] = "-"
         else:
             self.content_holder.grid_forget()
-            self.toggle_button.configure(text="+")
+            button_text[0] = "+"
+        self.title_button.configure(text="".join(button_text))
 
 
 def device_tree():
@@ -114,7 +114,13 @@ class ObjectListPane(tk.Frame):
         return handler
 
     def build(self):
-        self.create_widgets_from_device_types(self)
+        self.root_toggle_frame = ToggleFrame(
+            master=self,
+            title="Devices",
+            show_default=True,
+        )
+        self.root_toggle_frame.pack(fill="x")
+        self.create_widgets_from_device_types(self.root_toggle_frame.contents)
 
 
 class ViewPane(tk.Canvas):
