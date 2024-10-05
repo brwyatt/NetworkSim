@@ -1,5 +1,5 @@
 # Routing Basics
-Ethernet works well for things that are relatively nearby, and can also be noisy when switches flood their ports when a Hardware address is unknown, as this propagates through all switches on the network. IP networking allows us to break up these networks into logical groups, called "subnets". These subnets, if connected to other networks, can define a default address to handle traffic for addresses not part of the local subnet, this is called a "router".
+Ethernet works well for things that are relatively nearby, and can also be noisy when switches flood their interfaces when a Hardware address is unknown, as this propagates through all switches on the network. IP networking allows us to break up these networks into logical groups, called "subnets". These subnets, if connected to other networks, can define a default address to handle traffic for addresses not part of the local subnet, this is called a "router".
 
 This default address is referred to as the "default route" and is often notated as the "0.0.0.0/0" network which will match any destination that doesn't match another network route (such as "192.168.0.1/24") that is more specific/narrow. This can be manually defined (in the case of a static IP network) or provided by the DHCP server.
 
@@ -92,7 +92,7 @@ sim.step(17)  # ARP reply/response time
 sim.step(8)  # Time for packet to reach the router
 ```
 
-We can now see there is a packet on the outbound queue for the router's port connected to A's network. If we step through again, we can see it traversing the path to A (`sim.step(4)` will show the packet on the outbound queue for the port A is connected to on the switch), and that A does not respond (an error will print saying "No route to 172.16.20.X!").
+We can now see there is a packet on the outbound queue for the router's interface connected to A's network. If we step through again, we can see it traversing the path to A (`sim.step(4)` will show the packet on the outbound queue for the interface A is connected to on the switch), and that A does not respond (an error will print saying "No route to 172.16.20.X!").
 
 And now, if we step the simulation through a bit more, and look at the ping application logs on B, we can see the timeouts.
 
@@ -106,7 +106,7 @@ To resolve this, we just need to tell A to use the router for traffic off its lo
 ```
 A.ip.routes.add_route(
     IPNetwork(addr=IPAddr(byte_value=bytes(IPAddr.length_bytes)), match_bits=0),
-    port=A[0],
+    iface=A[0],
     via=IPAddr.from_str("192.168.0.1"),
 )
 ```

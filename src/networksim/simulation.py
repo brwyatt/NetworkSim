@@ -2,7 +2,7 @@ from networksim.hardware.cable import Cable
 from networksim.hardware.device import Device
 from networksim.hardware.device.infrastructure.switch import Switch
 from networksim.hardware.device.ip.ipdevice import IPDevice
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 
 
 class Simulation:
@@ -19,9 +19,9 @@ class Simulation:
         print("DEVICES (queue in | queue out):")
         for device in self.devices:
             print(f" * {device.name}:")
-            for x in range(0, len(device.ports)):
+            for x in range(0, len(device.ifaces)):
                 print(
-                    f"   * Port[{x}]"
+                    f"   * Iface[{x}]"
                     + (
                         f" ({device[x].hwid})"
                         if not isinstance(device, Switch)
@@ -30,34 +30,34 @@ class Simulation:
                     + f": {len(device[x].inbound_queue)} | {len(device[x].outbound_queue)}",
                 )
                 if isinstance(device, IPDevice):
-                    for bind in device.ip.bound_ips.get_binds(port=device[x]):
+                    for bind in device.ip.bound_ips.get_binds(iface=device[x]):
                         print(f"     * {bind.addr}/{bind.network.match_bits}")
 
     def print_cables(self):
         print("CABLES (a->b | b->a):")
         for cable in self.cables:
-            port_a = None
-            port_b = None
+            iface_a = None
+            iface_b = None
 
             for device in self.devices:
                 try:
-                    port_a = f"{device.name}[{device.port_id(cable.a)}]"
+                    iface_a = f"{device.name}[{device.iface_id(cable.a)}]"
                 except ValueError:
                     pass
                 try:
-                    port_b = f"{device.name}[{device.port_id(cable.b)}]"
+                    iface_b = f"{device.name}[{device.iface_id(cable.b)}]"
                 except ValueError:
                     pass
-                if port_a is not None and port_b is not None:
+                if iface_a is not None and iface_b is not None:
                     break
 
-            if port_a is None:
-                port_a = str(cable.a.hwid)
-            if port_b is None:
-                port_b = str(cable.b.hwid)
+            if iface_a is None:
+                iface_a = str(cable.a.hwid)
+            if iface_b is None:
+                iface_b = str(cable.b.hwid)
 
             print(
-                f" * {port_a}/{port_b}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
+                f" * {iface_a}/{iface_b}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
             )
 
     def print_cam_tables(self):
@@ -66,9 +66,9 @@ class Simulation:
             if not isinstance(device, Switch):
                 continue
             print(f" * {device.name}")
-            for x in range(0, len(device.ports)):
+            for x in range(0, len(device.ifaces)):
                 print(
-                    f"   * Port[{x}]: {[str(x) for x in device.CAM.get_hwids_by_port(device[x])]}",
+                    f"   * Iface[{x}]: {[str(x) for x in device.CAM.get_hwids_by_iface(device[x])]}",
                 )
 
     def print_arp_tables(self):
@@ -111,19 +111,19 @@ class Simulation:
         length: int = 3,
         bandwidth: int = 1,
     ):
-        a_port = None
-        for port in a.ports:
-            a_port = port
-            if not port.connected:
+        a_iface = None
+        for iface in a.ifaces:
+            a_iface = iface
+            if not iface.connected:
                 break
 
-        b_port = None
-        for port in b.ports:
-            b_port = port
-            if not port.connected:
+        b_iface = None
+        for iface in b.ifaces:
+            b_iface = iface
+            if not iface.connected:
                 break
 
-        cable = Cable(a_port, b_port, length, max_bandwidth=bandwidth)
+        cable = Cable(a_iface, b_iface, length, max_bandwidth=bandwidth)
 
         self.add_device(a)
         self.add_device(b)

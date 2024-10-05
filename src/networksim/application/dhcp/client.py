@@ -3,7 +3,7 @@ from typing import List
 import networksim.application.dhcp.payload as payload
 from networksim.application import Application
 from networksim.hardware.device import Device
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
@@ -24,22 +24,22 @@ class DHCPClient(Application):
         self,
         device: Device,
         *args,
-        ports: List[Port] = None,
+        ifaces: List[Interface] = None,
         **kwargs,
     ):
         super().__init__(device, *args, **kwargs)
 
-        if ports is None:
-            ports = device.ports
-        self.ports = ports
+        if ifaces is None:
+            ifaces = device.ifaces
+        self.ifaces = ifaces
 
         self.timeout = 60
 
         self.leases = {}
-        for port in ports:
-            if port not in self.leases:
-                self.leases[port] = {}
-                self.init_port(port)
+        for iface in self.ifaces:
+            if iface not in self.leases:
+                self.leases[iface] = {}
+                self.init_iface(iface)
 
         self.arp_requests = {}
 
@@ -58,27 +58,27 @@ class DHCPClient(Application):
             68,
         )
 
-    def init_port(self, port: Port):
-        self.leases[port]["state"] = "INIT"
-        self.leases[port]["request-timeout"] = 0
-        self.leases[port]["renew"] = 0
-        self.leases[port]["rebind"] = 0
-        self.leases[port]["expire"] = 0
-        if self.leases[port].get("bind", None) is not None:
+    def init_iface(self, iface: Interface):
+        self.leases[iface]["state"] = "INIT"
+        self.leases[iface]["request-timeout"] = 0
+        self.leases[iface]["renew"] = 0
+        self.leases[iface]["rebind"] = 0
+        self.leases[iface]["expire"] = 0
+        if self.leases[iface].get("bind", None) is not None:
             self.device.ip.unbind(
-                addr=self.leases[port]["bind"].addr,
-                port=port,
+                addr=self.leases[iface]["bind"].addr,
+                iface=iface,
             )
             self.device.ip.routes.del_routes(
                 network=self.default_route,
-                port=port,
+                iface=iface,
             )
-        self.leases[port]["bind"] = None
-        self.leases[port]["server"] = None
-        self.leases[port]["router"] = None
-        self.leases[port]["nameservers"] = None
+        self.leases[iface]["bind"] = None
+        self.leases[iface]["server"] = None
+        self.leases[iface]["router"] = None
+        self.leases[iface]["nameservers"] = None
 
-        return self.leases[port]
+        return self.leases[iface]
 
     def step(self):
         for arp, expire in list(self.arp_requests.items()):
@@ -86,7 +86,7 @@ class DHCPClient(Application):
             if expire <= 0:
                 del self.arp_requests[arp]
 
-        for port, lease in self.leases.items():
+        for iface, lease in self.leases.items():
             lease["renew"] = 0 if lease["renew"] == 0 else lease["renew"] - 1
             lease["rebind"] = (
                 0 if lease["rebind"] == 0 else lease["rebind"] - 1
@@ -100,7 +100,7 @@ class DHCPClient(Application):
                 else lease["request-timeout"] - 1
             )
 
-            if not port.connected:
+            if not iface.connected:
                 # Set next state (when it connects)
                 lease["state"] = (
                     "INIT-REBOOT"
@@ -122,7 +122,7 @@ class DHCPClient(Application):
                 lease["request-timeout"] = 0
             elif lease["state"] == "REBINDING" and lease["expire"] <= 0:
                 # We were in rebinding when lease expired
-                self.init_port(port)
+                self.init_iface(iface)
 
             if lease["request-timeout"] > 0 or lease["state"] == "BOUND":
                 # requests in-flight, or lease is active
@@ -139,10 +139,10 @@ class DHCPClient(Application):
                     options[54] = lease["server"]
 
                 self.log.append(f"Sending DHCPRequest ({lease['state']})")
-                port.send(
+                iface.send(
                     EthernetPacket(
                         dst=HWID.broadcast(),
-                        src=port.hwid,
+                        src=iface.hwid,
                         payload=IPPacket(
                             dst=IPAddr.broadcast(),
                             src=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
@@ -150,7 +150,7 @@ class DHCPClient(Application):
                                 dst_port=67,
                                 src_port=68,
                                 payload=payload.DHCPRequest(
-                                    client_hwid=port.hwid,
+                                    client_hwid=iface.hwid,
                                     server_ip=lease["server"],
                                     options=options,
                                 ),
@@ -167,10 +167,10 @@ class DHCPClient(Application):
                     options[50] = lease["bind"].addr
 
                 self.log.append(f"Sending DHCPDiscover ({lease['state']})")
-                port.send(
+                iface.send(
                     EthernetPacket(
                         dst=HWID.broadcast(),
-                        src=port.hwid,
+                        src=iface.hwid,
                         payload=IPPacket(
                             dst=IPAddr.broadcast(),
                             src=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
@@ -178,7 +178,7 @@ class DHCPClient(Application):
                                 dst_port=67,
                                 src_port=68,
                                 payload=payload.DHCPDiscover(
-                                    client_hwid=port.hwid,
+                                    client_hwid=iface.hwid,
                                     options=options,
                                 ),
                             ),
@@ -204,10 +204,10 @@ class DHCPClient(Application):
                     continue
 
                 self.log.append(f"Sending DHCPRequest ({lease['state']})")
-                port.send(
+                iface.send(
                     EthernetPacket(
                         dst=dst_hwid,
-                        src=port.hwid,
+                        src=iface.hwid,
                         payload=IPPacket(
                             dst=lease["server"],
                             src=lease["bind"].addr,
@@ -215,7 +215,7 @@ class DHCPClient(Application):
                                 dst_port=67,
                                 src_port=68,
                                 payload=payload.DHCPRequest(
-                                    client_hwid=port.hwid,
+                                    client_hwid=iface.hwid,
                                     server_ip=lease["server"],
                                     options=options,
                                 ),
@@ -230,7 +230,7 @@ class DHCPClient(Application):
         packet: Packet,
         src: IPAddr,
         dst: IPAddr,
-        port: Port,
+        iface: Interface,
     ):
         if not isinstance(packet.payload, payload.DHCPPayload):
             self.log.append(
@@ -238,15 +238,17 @@ class DHCPClient(Application):
             )
             return
 
-        lease = self.leases.get(port)
+        lease = self.leases.get(iface)
         if lease is None:
-            self.log.append("Received DCHP packet on port we don't care about")
+            self.log.append(
+                "Received DCHP packet on interface we don't care about",
+            )
             return
 
         if isinstance(packet.payload, payload.DHCPNack):
             self.log.append(f"Received DHCPNack ({lease['state']})")
             if lease["state"] in ["INIT-REBOOT", "RENEWING", "REBINDING"]:
-                self.init_port(port)
+                self.init_iface(iface)
             return
 
         if isinstance(packet.payload, payload.DHCPOffer):
@@ -255,7 +257,7 @@ class DHCPClient(Application):
                 self.log.append("Received DHCP OFFER when not in valid state")
                 return
 
-            if packet.payload.client_hwid != port.hwid:
+            if packet.payload.client_hwid != iface.hwid:
                 self.log.append("Received DCHP OFFER not for us!")
                 return
 
@@ -268,7 +270,7 @@ class DHCPClient(Application):
                         match_bits=24,
                     ),  # assume /24
                 ),
-                port=port,
+                iface=iface,
             )
 
             # We don't need to send here, as it's handled in step(), we just need to set the right states
@@ -302,7 +304,7 @@ class DHCPClient(Application):
                 self.log.append("Received DHCP ACK when not in valid state")
                 return
 
-            if packet.payload.client_hwid != port.hwid:
+            if packet.payload.client_hwid != iface.hwid:
                 self.log.append("Received DCHP Ack not for us!")
                 return
 
@@ -315,7 +317,7 @@ class DHCPClient(Application):
                         match_bits=24,
                     ),  # assume /24
                 ),
-                port=port,
+                iface=iface,
             )
 
             if bind != lease["bind"]:
@@ -328,7 +330,7 @@ class DHCPClient(Application):
             self.device.ip.bind(
                 addr=bind.addr,
                 network=bind.network,
-                port=port,
+                iface=iface,
             )
             lease["state"] = "BOUND"
             lease["request-timeout"] = 0
@@ -350,7 +352,7 @@ class DHCPClient(Application):
             if lease["router"] is not None:
                 self.device.ip.routes.add_route(
                     self.default_route,
-                    port,
+                    iface,
                     via=lease["router"],
                 )
 

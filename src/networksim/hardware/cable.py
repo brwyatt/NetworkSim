@@ -1,6 +1,6 @@
 import logging
 
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 
 
 logger = logging.getLogger(__name__)
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 class Cable:
     def __init__(
         self,
-        a: Port = None,
-        b: Port = None,
+        a: Interface = None,
+        b: Interface = None,
         length: int = 3,
         max_bandwidth: int = 1,
     ):
@@ -20,40 +20,40 @@ class Cable:
         self.b = b
 
     @property
-    def a(self) -> Port:
+    def a(self) -> Interface:
         if not hasattr(self, "_a"):
             return None
         return self._a
 
     @a.setter
-    def a(self, port: Port):
+    def a(self, iface: Interface):
         if hasattr(self, "_b") and self._a:
             self._a.disconnect()
 
-        if port is None:
+        if iface is None:
             self._a = None
-        elif port and type(port) is Port:
-            port.connect()
-            self._a = port
+        elif iface and type(iface) is Interface:
+            iface.connect()
+            self._a = iface
 
         self.flush()
 
     @property
-    def b(self) -> Port:
+    def b(self) -> Interface:
         if not hasattr(self, "_b"):
             return None
         return self._b
 
     @b.setter
-    def b(self, port: Port):
+    def b(self, iface: Interface):
         if hasattr(self, "_b") and self._b:
             self._b.disconnect()
 
-        if port is None:
+        if iface is None:
             self._b = None
-        elif port and type(port) is Port:
-            port.connect()
-            self._b = port
+        elif iface and type(iface) is Interface:
+            iface.connect()
+            self._b = iface
 
         self.flush()
 

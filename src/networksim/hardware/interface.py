@@ -12,7 +12,7 @@ class AlreadyConnectedException(Exception):
     pass
 
 
-class Port:
+class Interface:
     def __init__(
         self,
         hwid: Optional[HWID] = None,

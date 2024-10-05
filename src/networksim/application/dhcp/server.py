@@ -5,7 +5,7 @@ from typing import Optional
 import networksim.application.dhcp.payload as payload
 from networksim.application import Application
 from networksim.hardware.device import Device
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
@@ -167,7 +167,7 @@ class DHCPServer(Application):
         packet: Packet,
         src: IPAddr,
         dst: IPAddr,
-        port: Port,
+        iface: Interface,
     ):
         if not isinstance(packet.payload, payload.DHCPPayload):
             self.log.append(
@@ -178,12 +178,12 @@ class DHCPServer(Application):
         try:
             bind = self.device.ip.bound_ips.get_binds(
                 network=self.network,
-                port=port,
+                iface=iface,
             )[0]
         except IndexError:
             # Unexpected, until we implement DHCP proxying
             self.log.append(
-                "Received DHCP packet on port not bound to the network we offer DHCP for",
+                "Received DHCP packet on interface not bound to the network we offer DHCP for",
             )
             return
 
@@ -205,10 +205,10 @@ class DHCPServer(Application):
             lease = self.checkout(packet.payload.client_hwid, req_ip)
 
             self.log.append("Sending DHCPOffer")
-            port.send(
+            iface.send(
                 EthernetPacket(
                     dst=lease.hwid,
-                    src=port.hwid,
+                    src=iface.hwid,
                     payload=IPPacket(
                         dst=lease.addr,
                         src=bind.addr,
@@ -255,10 +255,10 @@ class DHCPServer(Application):
                 self.checkin(hwid=lease.hwid, addr=lease.addr)
                 # send a NACK
                 self.log.append("Sending DHCPNack")
-                port.send(
+                iface.send(
                     EthernetPacket(
                         dst=lease.hwid,
-                        src=port.hwid,
+                        src=iface.hwid,
                         payload=IPPacket(
                             dst=lease.addr,
                             src=bind.addr,
@@ -275,10 +275,10 @@ class DHCPServer(Application):
                 )
 
             self.log.append("Sending DHCPAck")
-            port.send(
+            iface.send(
                 EthernetPacket(
                     dst=lease.hwid,
-                    src=port.hwid,
+                    src=iface.hwid,
                     payload=IPPacket(
                         dst=lease.addr,
                         src=bind.addr,

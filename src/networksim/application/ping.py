@@ -3,7 +3,7 @@ from typing import Dict
 
 from networksim.application import Application
 from networksim.hardware.device import Device
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
 from networksim.packet.ip.icmp import ICMPPing
@@ -74,7 +74,7 @@ class Ping(Application):
         packet: Packet,
         src: IPAddr,
         dst: IPAddr,
-        port: Port,
+        iface: Interface,
     ):
         self.log.append(
             f"{self.step_count}: {dst} recieved PONG from {src} seq={packet.sequence}: {self.step_count - packet.payload['time']}",

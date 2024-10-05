@@ -30,37 +30,37 @@ sim.connect_devices(B, SW1)
 sim.connect_devices(C, SW2)
 ```
 
-Using IP addressing comes with two new requirements. First, we must bind an IP address to a device port, and then we must be able to map IP addresses of others to the hardware address on the LAN to send the packets to.
+Using IP addressing comes with two new requirements. First, we must bind an IP address to a device interface, and then we must be able to map IP addresses of others to the hardware address on the LAN to send the packets to.
 
-To bind an IP address to Device "A"'s port:
+To bind an IP address to Device "A"'s interface:
 
 ```
 A.ip.bind(IPAddr.from_str("192.168.1.5"), IPNetwork(IPAddr.from_str("192.168.1.0"), 24), A[0])
 ```
 
-This will register this address and network in the IP stack to the port on the device, and trigger the device to send a Gratuitous ARP, which is a broadcast message to other hosts on the same Ethernet segment to tell them the hardware address that the IP belongs to. When a device receives an ARP or IP packet from another device with an IP in a network it is bound to, it will keep track of it's hardware address within it's ARP table, similar to how a switch tracks the hardware address and port mapping in it's CAM table.
+This will register this address and network in the IP stack to the interface on the device, and trigger the device to send a Gratuitous ARP, which is a broadcast message to other hosts on the same Ethernet segment to tell them the hardware address that the IP belongs to. When a device receives an ARP or IP packet from another device with an IP in a network it is bound to, it will keep track of it's hardware address within it's ARP table, similar to how a switch tracks the hardware address and interface mapping in it's CAM table.
 
 If we step the simulation forward by 12 with `sim.step(12)` (so the GARP from A can reach Device B (8) that is on the same switch and Device C (12) attached to the other switch), we can see that both other Devices do not track this mapping yet using `sim.show()`:
 
 ```
 DEVICES (queue in | queue out):
  * A:
-   * Port[0] (c0:db:77:20:c2:01): 0 | 0
+   * Iface[0] (c0:db:77:20:c2:01): 0 | 0
      * 192.168.1.5/24
  * B:
-   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
+   * Iface[0] (56:8e:0a:50:aa:01): 0 | 0
  * C:
-   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
+   * Iface[0] (27:9a:e6:ca:44:01): 0 | 0
  * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
+   * Iface[0]: 0 | 0
+   * Iface[1]: 0 | 0
+   * Iface[2]: 0 | 0
+   * Iface[3]: 0 | 0
  * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
+   * Iface[0]: 0 | 0
+   * Iface[1]: 0 | 0
+   * Iface[2]: 0 | 0
+   * Iface[3]: 0 | 0
 CABLES (a->b | b->a):
  * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
  * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
@@ -68,15 +68,15 @@ CABLES (a->b | b->a):
  * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
 CAM TABLES:
  * SW1
-   * Port[0]: []
-   * Port[1]: ['c0:db:77:20:c2:01']
-   * Port[2]: []
-   * Port[3]: []
+   * Iface[0]: []
+   * Iface[1]: ['c0:db:77:20:c2:01']
+   * Iface[2]: []
+   * Iface[3]: []
  * SW2
-   * Port[0]: ['c0:db:77:20:c2:01']
-   * Port[1]: []
-   * Port[2]: []
-   * Port[3]: []
+   * Iface[0]: ['c0:db:77:20:c2:01']
+   * Iface[1]: []
+   * Iface[2]: []
+   * Iface[3]: []
 ARP TABLES:
  * A
  * B
@@ -101,25 +101,25 @@ Then step the simulation forward 13 times with `sim.step(13)` (for the extra pac
 ```
 DEVICES (queue in | queue out):
  * A:
-   * Port[0] (c0:db:77:20:c2:01): 0 | 0
+   * Iface[0] (c0:db:77:20:c2:01): 0 | 0
      * 192.168.1.5/24
  * B:
-   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
+   * Iface[0] (56:8e:0a:50:aa:01): 0 | 0
      * 192.168.0.10/24
  * C:
-   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
+   * Iface[0] (27:9a:e6:ca:44:01): 0 | 0
      * 192.168.1.15/24
      * 192.168.0.20/24
  * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
+   * Iface[0]: 0 | 0
+   * Iface[1]: 0 | 0
+   * Iface[2]: 0 | 0
+   * Iface[3]: 0 | 0
  * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
+   * Iface[0]: 0 | 0
+   * Iface[1]: 0 | 0
+   * Iface[2]: 0 | 0
+   * Iface[3]: 0 | 0
 CABLES (a->b | b->a):
  * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
  * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
@@ -127,15 +127,15 @@ CABLES (a->b | b->a):
  * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
 CAM TABLES:
  * SW1
-   * Port[0]: ['27:9a:e6:ca:44:01']
-   * Port[1]: ['c0:db:77:20:c2:01']
-   * Port[2]: ['56:8e:0a:50:aa:01']
-   * Port[3]: []
+   * Iface[0]: ['27:9a:e6:ca:44:01']
+   * Iface[1]: ['c0:db:77:20:c2:01']
+   * Iface[2]: ['56:8e:0a:50:aa:01']
+   * Iface[3]: []
  * SW2
-   * Port[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
-   * Port[1]: ['27:9a:e6:ca:44:01']
-   * Port[2]: []
-   * Port[3]: []
+   * Iface[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
+   * Iface[1]: ['27:9a:e6:ca:44:01']
+   * Iface[2]: []
+   * Iface[3]: []
 ARP TABLES:
  * A
    * 192.168.1.15: 27:9a:e6:ca:44:01
@@ -166,25 +166,25 @@ After stepping the simulation 24 times (12 for the request to reach A, 12 more f
 ```
 DEVICES (queue in | queue out):
  * A:
-   * Port[0] (c0:db:77:20:c2:01): 0 | 0
+   * Iface[0] (c0:db:77:20:c2:01): 0 | 0
      * 192.168.1.5/24
  * B:
-   * Port[0] (56:8e:0a:50:aa:01): 0 | 0
+   * Iface[0] (56:8e:0a:50:aa:01): 0 | 0
      * 192.168.0.10/24
  * C:
-   * Port[0] (27:9a:e6:ca:44:01): 0 | 0
+   * Iface[0] (27:9a:e6:ca:44:01): 0 | 0
      * 192.168.1.15/24
      * 192.168.0.20/24
  * SW1:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
+   * Iface[0]: 0 | 0
+   * Iface[1]: 0 | 0
+   * Iface[2]: 0 | 0
+   * Iface[3]: 0 | 0
  * SW2:
-   * Port[0]: 0 | 0
-   * Port[1]: 0 | 0
-   * Port[2]: 0 | 0
-   * Port[3]: 0 | 0
+   * Iface[0]: 0 | 0
+   * Iface[1]: 0 | 0
+   * Iface[2]: 0 | 0
+   * Iface[3]: 0 | 0
 CABLES (a->b | b->a):
  * SW1[0]/SW2[0]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
  * A[0]/SW1[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
@@ -192,15 +192,15 @@ CABLES (a->b | b->a):
  * C[0]/SW2[1]: ['(None,)', '(None,)', '(None,)'] | ['(None,)', '(None,)', '(None,)']
 CAM TABLES:
  * SW1
-   * Port[0]: ['27:9a:e6:ca:44:01']
-   * Port[1]: ['c0:db:77:20:c2:01']
-   * Port[2]: ['56:8e:0a:50:aa:01']
-   * Port[3]: []
+   * Iface[0]: ['27:9a:e6:ca:44:01']
+   * Iface[1]: ['c0:db:77:20:c2:01']
+   * Iface[2]: ['56:8e:0a:50:aa:01']
+   * Iface[3]: []
  * SW2
-   * Port[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
-   * Port[1]: ['27:9a:e6:ca:44:01']
-   * Port[2]: []
-   * Port[3]: []
+   * Iface[0]: ['c0:db:77:20:c2:01', '56:8e:0a:50:aa:01']
+   * Iface[1]: ['27:9a:e6:ca:44:01']
+   * Iface[2]: []
+   * Iface[3]: []
 ARP TABLES:
  * A
    * 192.168.1.15: 27:9a:e6:ca:44:01
@@ -270,7 +270,7 @@ dhcp_server.add_application(DHCPServer, "dhcp_server")
 dhcp_server.start_application(
     "dhcp_server",
     network=dhcp_server.ip.bound_ips.get_binds(
-        port=dhcp_server[0],
+        iface=dhcp_server[0],
     )[0].network,
 )
 ```
@@ -284,4 +284,4 @@ A.add_application(DHCPClient, "dhcp_client")
 A.start_application("dhcp_client")
 ```
 
-This will start the DHCP Client for every port on the device (alternatively, a list of ports can be passed when starting the application if only specific ports are desired for DHCP). For each connected port, the DHCP Client will start sending DHCPDiscover messages and begin the process of getting an IP address from the DHCP Server, which is a 2-step process, with each step being a query from the client and a reply from the server (DHCPDiscover->DHCPOffer, DHCPRequest->DHCPAck), at which point the client will bind the issued IP to the port, and periodically renew it based on the renewal, rebind, and expiration times.
+This will start the DHCP Client for every interface on the device (alternatively, a list of interfaces can be passed when starting the application if only specific interfaces are desired for DHCP). For each connected interface, the DHCP Client will start sending DHCPDiscover messages and begin the process of getting an IP address from the DHCP Server, which is a 2-step process, with each step being a query from the client and a reply from the server (DHCPDiscover->DHCPOffer, DHCPRequest->DHCPAck), at which point the client will bind the issued IP to the interface, and periodically renew it based on the renewal, rebind, and expiration times.

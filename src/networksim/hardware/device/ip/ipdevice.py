@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from networksim.hardware.device import Device
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 from networksim.hwid import HWID
 from networksim.stack.ipstack import IPStack
 
@@ -14,11 +14,11 @@ class IPDevice(Device):
     def __init__(
         self,
         name: Optional[str] = None,
-        port_count: int = 1,
+        iface_count: int = 1,
         auto_process: bool = True,
         process_rate: Optional[int] = None,
     ):
-        super().__init__(name, port_count, auto_process, process_rate)
+        super().__init__(name, iface_count, auto_process, process_rate)
 
         self.ip = IPStack()
 
@@ -26,15 +26,15 @@ class IPDevice(Device):
         super().step()
         self.ip.step()
 
-    def handle_connection_state_change(self, port: Port):
-        super().handle_connection_state_change(port)
-        if not port.connected:
-            self.ip.unbind(port=port)
+    def handle_connection_state_change(self, iface: Interface):
+        super().handle_connection_state_change(iface)
+        if not iface.connected:
+            self.ip.unbind(iface=iface)
 
     def run_jobs(self):
         self.ip.addr_table.expire()
         super().run_jobs()
 
-    def process_payload(self, payload, src: HWID, dst: HWID, port: Port):
+    def process_payload(self, payload, src: HWID, dst: HWID, iface: Interface):
         if isinstance(payload, self.ip.supported_types):
-            self.ip.process_packet(payload, src, dst, port)
+            self.ip.process_packet(payload, src, dst, iface)

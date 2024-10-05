@@ -7,7 +7,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
@@ -67,12 +67,12 @@ class Route:
     def __init__(
         self,
         network: IPNetwork,
-        port: Port,
+        iface: Interface,
         via: Optional[IPAddr] = None,
         src: Optional[IPAddr] = None,
     ):
         self.network = network
-        self.port = port
+        self.iface = iface
         self.via = via
         self.src = src
 
@@ -83,12 +83,12 @@ class Route:
         return self.network.match_bits < other.network.match_bits
 
     def __hash__(self):
-        return hash((self.network, self.port, self.via, self.src))
+        return hash((self.network, self.iface, self.via, self.src))
 
     def __str__(self):
         via = f" via {self.via}" if self.via is not None else ""
         src = f" src {self.src}" if self.src is not None else ""
-        return f"{self.network}{via} dev {self.port.hwid}{src}"
+        return f"{self.network}{via} dev {self.iface.hwid}{src}"
 
 
 class RouteTable:
@@ -98,18 +98,18 @@ class RouteTable:
     def add_route(
         self,
         network: IPNetwork,
-        port: Port,
+        iface: Interface,
         via: Optional[IPAddr] = None,
         src: Optional[IPAddr] = None,
     ):
-        route = Route(network, port, via, src)
+        route = Route(network, iface, via, src)
         if route not in self.routes:
             insort(self.routes, route)
 
     def del_routes(
         self,
         network: Optional[IPNetwork] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
         via: Optional[IPAddr] = None,
         src: Optional[IPAddr] = None,
     ):
@@ -118,7 +118,7 @@ class RouteTable:
             for x in self.routes
             if not (
                 (network is None or network == x.network)
-                and (port is None or port == x.port)
+                and (iface is None or iface == x.iface)
                 and (via is None or (x.via is not None and via == x.via))
                 and (src is None or (x.src is not None and src == x.src))
             )
@@ -128,7 +128,7 @@ class RouteTable:
         self,
         dst: IPAddr,
         src: Optional[IPAddr] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ) -> Optional[Route]:
         found_route = None
 
@@ -136,22 +136,22 @@ class RouteTable:
             if (
                 route.network.in_network(dst)
                 and (src is None or route.src is None or route.src == src)
-                and (port is None or route.port == port)
+                and (iface is None or route.iface == iface)
             ):
                 found_route = route
 
         return found_route
 
 
-IPBind = namedtuple("IPBind", ["addr", "network", "port"])
+IPBind = namedtuple("IPBind", ["addr", "network", "iface"])
 
 
 class BoundIPs:
     def __init__(self):
         self.binds = []
 
-    def add_bind(self, addr: IPAddr, network: IPNetwork, port: Port):
-        bind = IPBind(addr, network, port)
+    def add_bind(self, addr: IPAddr, network: IPNetwork, iface: Interface):
+        bind = IPBind(addr, network, iface)
         if bind not in self.binds:
             self.binds.append(bind)
 
@@ -159,7 +159,7 @@ class BoundIPs:
         self,
         addr: Optional[IPAddr] = None,
         network: Optional[IPNetwork] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ) -> List[IPBind]:
         return [
             x
@@ -167,7 +167,7 @@ class BoundIPs:
             if (
                 (addr is None or addr == x.addr)
                 and (network is None or network == x.network)
-                and (port is None or port == x.port)
+                and (iface is None or iface == x.iface)
             )
         ]
 
@@ -175,7 +175,7 @@ class BoundIPs:
         self,
         addr: Optional[IPAddr] = None,
         network: Optional[IPNetwork] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ) -> List[IPBind]:
         self.binds = [
             x
@@ -183,14 +183,14 @@ class BoundIPs:
             if not (
                 (addr is None or addr == x.addr)
                 and (network is None or network == x.network)
-                and (port is None or port == x.port)
+                and (iface is None or iface == x.iface)
             )
         ]
 
 
 QueuedSend = namedtuple(
     "QueuedSend",
-    ["pending", "dst", "payload", "src", "port", "ttl"],
+    ["pending", "dst", "payload", "src", "iface", "ttl"],
 )
 
 
@@ -215,18 +215,18 @@ class IPStack(Stack):
     def supported_types(self) -> Tuple[type]:
         return (ARPPacket, IPPacket)
 
-    def bind(self, addr: IPAddr, network: IPNetwork, port: Port):
-        self.bound_ips.add_bind(addr, network, port)
-        self.routes.add_route(network, port, src=addr)
-        self.send_garp(addr, port)
+    def bind(self, addr: IPAddr, network: IPNetwork, iface: Interface):
+        self.bound_ips.add_bind(addr, network, iface)
+        self.routes.add_route(network, iface, src=addr)
+        self.send_garp(addr, iface)
 
     def unbind(
         self,
         addr: Optional[IPAddr],
-        port: Optional[Port],
+        iface: Optional[Interface],
     ):
-        self.bound_ips.del_binds(addr=addr, port=port)
-        self.routes.del_routes(src=addr, port=port)
+        self.bound_ips.del_binds(addr=addr, iface=iface)
+        self.routes.del_routes(src=addr, iface=iface)
 
     def bind_protocol(
         self,
@@ -273,7 +273,7 @@ class IPStack(Stack):
 
     def send_arp_request(self, addr: IPAddr, force: bool = False):
         route = self.routes.find_route(addr)
-        if route is None or route.src is None or route.port is None:
+        if route is None or route.src is None or route.iface is None:
             logger.error(f"Could not find suitible route for {addr}")
             return
 
@@ -282,13 +282,13 @@ class IPStack(Stack):
             if not force:
                 return
 
-        route.port.send(
+        route.iface.send(
             EthernetPacket(
                 dst=HWID.broadcast(),
-                src=route.port.hwid,
+                src=route.iface.hwid,
                 payload=ARPPacket(
                     dst_ip=addr,
-                    src=route.port.hwid,
+                    src=route.iface.hwid,
                     src_ip=route.src,
                     request=True,
                 ),
@@ -301,54 +301,54 @@ class IPStack(Stack):
         self,
         dst: IPAddr,
         src: IPAddr,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ):
-        if port is None:
+        if iface is None:
             try:
-                port = [
+                iface = [
                     x
                     for x in self.bound_ips.get_binds(addr=src)
-                    if x.port is not None
-                ][:1][0].port
+                    if x.iface is not None
+                ][:1][0].iface
             except IndexError:
-                logger.error(f"Could not find bound port for {src}")
+                logger.error(f"Could not find bound interface for {src}")
                 return
 
         dst_hwid = self.addr_table.lookup(dst)
 
-        port.send(
+        iface.send(
             EthernetPacket(
                 dst=dst_hwid,
-                src=port.hwid,
+                src=iface.hwid,
                 payload=ARPPacket(
                     dst=dst_hwid,
                     dst_ip=dst,
-                    src=port.hwid,
+                    src=iface.hwid,
                     src_ip=src,
                     request=False,
                 ),
             ),
         )
 
-    def send_garp(self, addr: IPAddr, port: Optional[Port] = None):
-        if port is None:
+    def send_garp(self, addr: IPAddr, iface: Optional[Interface] = None):
+        if iface is None:
             try:
-                port = [
+                iface = [
                     x
                     for x in self.bound_ips.get_binds(addr=addr)
-                    if x.port is not None
-                ][:1][0].port
+                    if x.iface is not None
+                ][:1][0].iface
             except IndexError:
-                logger.error(f"Could not find bound port for {addr}")
+                logger.error(f"Could not find bound interface for {addr}")
                 return
 
-        port.send(
+        iface.send(
             EthernetPacket(
                 dst=HWID.broadcast(),
-                src=port.hwid,
+                src=iface.hwid,
                 payload=ARPPacket(
                     dst_ip=addr,  # silly, but it is how it is defined
-                    src=port.hwid,
+                    src=iface.hwid,
                     src_ip=addr,
                     request=False,
                 ),
@@ -360,7 +360,7 @@ class IPStack(Stack):
         dst: IPAddr,
         payload,
         src: Optional[IPAddr] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
         ttl: Optional[int] = None,
     ):
         src_bind = None
@@ -368,16 +368,16 @@ class IPStack(Stack):
             try:
                 src_bind = self.bound_ips.get_binds(
                     addr=src,
-                    port=port,
+                    iface=iface,
                 )[0].addr
             except IndexError:
                 # no bound IP matches, so ignore - might be routing or spoofing
                 pass
 
-        route = self.routes.find_route(dst, src=src_bind, port=port)
+        route = self.routes.find_route(dst, src=src_bind, iface=iface)
         next_hop = route.via if route is not None else None
         if next_hop is not None:
-            route = self.routes.find_route(next_hop, src=src_bind, port=port)
+            route = self.routes.find_route(next_hop, src=src_bind, iface=iface)
 
         if route is None:
             logger.error(f"No route to {dst}!")
@@ -386,7 +386,7 @@ class IPStack(Stack):
         next_hop = next_hop if next_hop is not None else dst
 
         src = route.src if src is None else src
-        port = route.port
+        iface = route.iface
         dst_hwid = self.addr_table.lookup(next_hop)
 
         if dst_hwid is None:
@@ -400,16 +400,16 @@ class IPStack(Stack):
                     dst=dst,
                     payload=payload,
                     src=src,
-                    port=port,
+                    iface=iface,
                     ttl=ttl,
                 ),
             )
             return
 
-        port.send(
+        iface.send(
             EthernetPacket(
                 dst=dst_hwid,
-                src=port.hwid,
+                src=iface.hwid,
                 payload=IPPacket(
                     dst=dst,
                     src=src,
@@ -422,28 +422,33 @@ class IPStack(Stack):
     def local_source(
         self,
         src_ip: IPAddr,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ) -> bool:
         # Just checks that the reviced packet is from a local network
         src_route = self.routes.find_route(src_ip)
         if src_route is None:
             return False
         if (
-            (port is None or src_route.port == port)
+            (iface is None or src_route.iface == iface)
             and src_route.src is not None
             and src_route.network is not None
             and self.bound_ips.get_binds(
                 src_route.src,
                 src_route.network,
-                port,
+                iface,
             )
         ):
-            # Packet was received on the port we expect for that network (if given), and we have a bound IP for that network on that port. Basically, guards against packets on the wrong network/port overwriting the HWID of an IP in the ARP table on another network/port.
+            # Packet was received on the iface we expect for that network (if given), and we have a bound IP for that network on that iface. Basically, guards against packets on the wrong network/iface overwriting the HWID of an IP in the ARP table on another network/iface.
             return True
         return False
 
-    def add_arp(self, src_ip: IPAddr, src: HWID, port: Optional[Port] = None):
-        if self.local_source(src_ip, port):
+    def add_arp(
+        self,
+        src_ip: IPAddr,
+        src: HWID,
+        iface: Optional[Interface] = None,
+    ):
+        if self.local_source(src_ip, iface):
             self.addr_table.add_entry(src_ip, src)
             try:
                 del self.arp_requests[src_ip]
@@ -457,7 +462,7 @@ class IPStack(Stack):
                     dst=queued.dst,
                     payload=queued.payload,
                     src=queued.src,
-                    port=queued.port,
+                    iface=queued.iface,
                     ttl=queued.ttl,
                 )
 
@@ -466,11 +471,11 @@ class IPStack(Stack):
         packet: ARPPacket,
         src: Optional[HWID] = None,
         dst: Optional[HWID] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ):
         if packet.src is not None and packet.src_ip is not None:
             # Anything that gives something we can map
-            self.add_arp(packet.src_ip, packet.src, port)
+            self.add_arp(packet.src_ip, packet.src, iface)
 
             if (
                 packet.request
@@ -490,10 +495,10 @@ class IPStack(Stack):
         packet: ICMPPacket,
         src: IPAddr,
         dst: IPAddr,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ):
         if isinstance(packet, ICMPPing):
-            if not self.bound_ips.get_binds(addr=dst, port=port):
+            if not self.bound_ips.get_binds(addr=dst, iface=iface):
                 logger.warn(f"Received ping for {dst} from {src} - Not us!")
                 return
             self.send(
@@ -504,11 +509,11 @@ class IPStack(Stack):
                     sequence=packet.sequence,
                     payload=packet.payload,
                 ),
-                port=port,
+                iface=iface,
             )
             return
         if isinstance(packet, ICMPPong):
-            if not self.bound_ips.get_binds(addr=dst, port=port):
+            if not self.bound_ips.get_binds(addr=dst, iface=iface):
                 logger.warn(f"Received pong for {dst} from {src} - Not us!")
                 return
             logger.info(
@@ -520,14 +525,14 @@ class IPStack(Stack):
                 packet.identifier,
             )
             if callback is not None:
-                callback(packet, src=src, dst=dst, port=port)
+                callback(packet, src=src, dst=dst, iface=iface)
 
     def process_udp(
         self,
         packet: ICMPPacket,
         src: IPAddr,
         dst: IPAddr,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ):
         callback = self.get_protocol_callback(
             UDP,
@@ -535,28 +540,28 @@ class IPStack(Stack):
             packet.dst_port,
         )
         if callback is not None:
-            callback(packet, src=src, dst=dst, port=port)
+            callback(packet, src=src, dst=dst, iface=iface)
 
     def process_packet(
         self,
         packet: Union[ARPPacket, IPPacket, UDP],
         src: Optional[HWID] = None,
         dst: Optional[HWID] = None,
-        port: Optional[Port] = None,
+        iface: Optional[Interface] = None,
     ):
         if isinstance(packet, ARPPacket):
-            self.process_arp(packet, src, dst, port)
+            self.process_arp(packet, src, dst, iface)
             return
 
         if not isinstance(packet, IPPacket):
             logger.warning("Received non-IP packet!")
             return
 
-        self.add_arp(packet.src, src, port)
+        self.add_arp(packet.src, src, iface)
 
         if (
             self.bound_ips.get_binds(
-                port=port,
+                iface=iface,
             )  # don't forward if we don't have an IP
             and packet.dst
             not in (
@@ -589,7 +594,7 @@ class IPStack(Stack):
                 packet=packet.payload,
                 src=packet.src,
                 dst=packet.dst,
-                port=port,
+                iface=iface,
             )
 
         if isinstance(packet.payload, UDP):
@@ -597,5 +602,5 @@ class IPStack(Stack):
                 packet=packet.payload,
                 src=packet.src,
                 dst=packet.dst,
-                port=port,
+                iface=iface,
             )

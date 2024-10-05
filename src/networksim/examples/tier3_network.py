@@ -15,19 +15,19 @@ from networksim.simulation import Simulation
 sim = Simulation()
 
 # CORE Switch
-cor_sw = Switch(name="cor_sw", port_count=4, forward_capacity=1600)
-for port in cor_sw.ports:
-    port.max_bandwidth = 400
+cor_sw = Switch(name="cor_sw", iface_count=4, forward_capacity=1600)
+for iface in cor_sw.ifaces:
+    iface.max_bandwidth = 400
 sim.add_device(cor_sw)
 
 
 # Aggregation Switches
 def create_agg(name):
-    sw = Switch(name=name, port_count=10, forward_capacity=1500)
-    for port in sw.ports[:-2]:
-        port.max_bandwidth = 100
-    for port in sw.ports[-2:]:
-        port.max_bandwidth = 400
+    sw = Switch(name=name, iface_count=10, forward_capacity=1500)
+    for iface in sw.ifaces[:-2]:
+        iface.max_bandwidth = 100
+    for iface in sw.ifaces[-2:]:
+        iface.max_bandwidth = 400
     return sw
 
 
@@ -42,11 +42,11 @@ sim.add_cable(Cable(agg_sw2[-1], cor_sw[1], length=5, max_bandwidth=400))
 
 # Access Switches
 def create_acc(name):
-    sw = Switch(name=name, port_count=26, forward_capacity=400)
-    for port in sw.ports[:-2]:
-        port.max_bandwidth = 10
-    for port in sw.ports[-2:]:
-        port.max_bandwidth = 100
+    sw = Switch(name=name, iface_count=26, forward_capacity=400)
+    for iface in sw.ifaces[:-2]:
+        iface.max_bandwidth = 10
+    for iface in sw.ifaces[-2:]:
+        iface.max_bandwidth = 100
     return sw
 
 
@@ -71,7 +71,7 @@ dhcp_server_ip = IPAddr.from_str("172.16.20.5")
 dhcp_network = IPNetwork(dhcp_server_ip, 24)
 
 dhcp_server = IPDevice(name="dhcp_server")
-dhcp_server.ports[0].max_bandwidth = 20
+dhcp_server.ifaces[0].max_bandwidth = 20
 sim.add_device(dhcp_server)
 sim.add_cable(
     Cable(
@@ -79,7 +79,7 @@ sim.add_cable(
         choice(
             [
                 x
-                for x in (agg_sw1.ports[:-2] + agg_sw2.ports[:-2])
+                for x in (agg_sw1.ifaces[:-2] + agg_sw2.ifaces[:-2])
                 if not x.connected
             ],
         ),  # add to AGG switch for bandwidth reasons
@@ -97,23 +97,23 @@ dhcp_server.start_application(
 
 # Client devices
 def add_device():
-    available_ports = [
+    available_ifaces = [
         x
         for x in (
-            acc_sw1_1.ports[:-2]
-            + acc_sw1_2.ports[:-2]
-            + acc_sw2_1.ports[:-2]
-            + acc_sw2_2.ports[:-2]
+            acc_sw1_1.ifaces[:-2]
+            + acc_sw1_2.ifaces[:-2]
+            + acc_sw2_1.ifaces[:-2]
+            + acc_sw2_2.ifaces[:-2]
         )
         if not x.connected
     ]
     dev = IPDevice()
-    dev.ports[0].max_bandwidth = 10
+    dev.ifaces[0].max_bandwidth = 10
     sim.add_device(dev)
     sim.add_cable(
         Cable(
             dev[0],
-            choice(available_ports),
+            choice(available_ifaces),
             length=randint(1, 6),
             max_bandwidth=10,
         ),

@@ -7,18 +7,18 @@ This project was started as a way to both learn and teach how networks work at t
 ## Limitations (Deviations from reality)
 * The time units analogue in the simulation are "steps".
   * Cable lengths are measured in the number of "steps" for packets to taverse the length of the cable
-  * Port buffers are based on the number of "steps" worth of packets that can be stored (relative to their bandwidth)
+  * Interface buffers are based on the number of "steps" worth of packets that can be stored (relative to their bandwidth)
 * Cables (Physical layer oddities)
   * These decisions were made in order to make it easy to simulate/control and keep the focus on the higher level protocols, and the actual implementation here actually doesn't matter, as the protocols are intended to be run over different physical layers, and do in the real world (2- or 4-pair copper CAT cables, Multi-/Single-Mode fiber, and encapsulated protocols such as GPON (fiber internet), DOCSIS (cable internet), and VPN)
   * Unlike the real world, packets "exist" on the cable in discrete units (rather than conducting electical signals between ends)
-  * Cables are "active" in that they are actually the entity in the simulation pulling packets off of port outbound buffers and placing them on port inbound buffers, rather than just being a conduit for electrical signals or light transmitted from the port and received on the other end.
-  * the "bandwidth" is the number of packets per "step" along the cable. This would be most analagous to the higher frequency of CAT cables that higher-rated cables (and ports) use to achieve higher bandwidth.
+  * Cables are "active" in that they are actually the entity in the simulation pulling packets off of interface outbound buffers and placing them on interface inbound buffers, rather than just being a conduit for electrical signals or light transmitted from the interface and received on the other end.
+  * the "bandwidth" is the number of packets per "step" along the cable. This would be most analagous to the higher frequency of CAT cables that higher-rated cables (and interfaces) use to achieve higher bandwidth.
 * Packets are the fundamental unit
   * Unlike the real world, packets are transmitted as a single discrete unit, irrelevant of size.
   * Packets are also structured Python objects, for ease of inspection and exploration/understanding of protocols, rather than being raw binary data. The idea is to teach "IP Packets are encapsulated in an Ethernet packet have a source and destination IP address" rather than "these x bytes of the IP data frame portion of the packet contains y data".
 * Device packet processing
-  * By default, devices are configured to be able to read the combined bandwidth of all ports every step. This will, by default, ensure the inbound buffers can never fill. This can be tweaked to slow the processing of packets to allow for "overwhelming" a host and dropping packets.
-    * On switches, this default can easily lead to overflowing of outbound buffers on popular destination ports, unless those are manually increased.
+  * By default, devices are configured to be able to read the combined bandwidth of all interfaces every step. This will, by default, ensure the inbound buffers can never fill. This can be tweaked to slow the processing of packets to allow for "overwhelming" a host and dropping packets.
+    * On switches, this default can easily lead to overflowing of outbound buffers on popular destination interfaces, unless those are manually increased.
     * For simplicity, "applications" listening on a host, can process and respond to a packet (or multiple packets) within the same step, without any kind of time delay for processing like the real world would normally see.
 
 ## TODO
@@ -28,7 +28,7 @@ Known missing things that might get implemented
 * TCP - Requires a bit more tracking, still making sure the basics are all worked out
 * VLANs - May require some rework of some parts to support, but likely worth implementing as the concepts are pretty useful
 * (R)STP - Might be out of scope. Lets be honest, though, if you know what this is, this really isn't for you anyway. 😉
-* Port bonding and LACP - might be fun, might also be out of scope (at least short-term)
+* Interface bonding and LACP - might be fun, might also be out of scope (at least short-term)
 
 ## Basic Usage
 
@@ -65,7 +65,7 @@ sim.add_device(B)
 sim.add_device(SW)
 ```
 
-By default, `Device`s have a single port, and `Switch`es have 4. You can see the current state of the simulation, and see that the devices have been added with the `show()` function, which will output all devices and their ports (including their hardware ("MAC") addresses), as well as their in/out queue sizes.
+By default, `Device`s have a single interface, and `Switch`es have 4. You can see the current state of the simulation, and see that the devices have been added with the `show()` function, which will output all devices and their interfaces (including their hardware ("MAC") addresses), as well as their in/out queue sizes.
 
 ```
 sim.show()
@@ -73,7 +73,7 @@ sim.show()
 
 They aren't connected yet, however, we need to connect them, which we can do two ways:
 
-Manually creating a cable, connecting it to the device ports, and adding it to the simulation:
+Manually creating a cable, connecting it to the device interface, and adding it to the simulation:
 ```
 from networksim.hardware.cable import Cable
 
@@ -81,7 +81,7 @@ cable_A_SW = Cable(A[0], SW[0])
 sim.add_cable(cable_A_SW)
 ```
 
-Having the simulation create the cable and connect to the first available (unused) port on a device for you (which will, additionally, add the devices to the simulation if they aren't already):
+Having the simulation create the cable and connect to the first available (unused) interface on a device for you (which will, additionally, add the devices to the simulation if they aren't already):
 ```
 sim.connect_devices(B, SW)
 ```
@@ -94,11 +94,11 @@ Now that we have both devices connected to the switch, they should be able to se
 A[0].send(EthernetPacket(dst=B[0].hwid, payload="Hello B!"))
 ```
 
-And a `sim.show()` will show that Port[0] on device A has a packet on the outbound queue. If we advance the simulation by 1 (`sim.step()`), we can see the packet on the cable between A and the switch by running `show()` again.
+And a `sim.show()` will show that Iface[0] on device A has a packet on the outbound queue. If we advance the simulation by 1 (`sim.step()`), we can see the packet on the cable between A and the switch by running `show()` again.
 
-If we advance the simulation 3 more times (`sim.step(3)`), we can see a packet on the outbound queue of Port[1] of SW. As well as an entry for A's hardware address in the switch's CAM table (more on that later).
+If we advance the simulation 3 more times (`sim.step(3)`), we can see a packet on the outbound queue of Iface[1] of SW. As well as an entry for A's hardware address in the switch's CAM table (more on that later).
 
-Advancing the simulation 4 more steps will show a packet on the inbound queue for B. Unlike `Switch`es (and, later, `IPDevice`s), basic Ethernet `Device`s don't automatically process packets from their queue by default. But we can manually read the packet from the port ourselves.
+Advancing the simulation 4 more steps will show a packet on the inbound queue for B. Unlike `Switch`es (and, later, `IPDevice`s), basic Ethernet `Device`s don't automatically process packets from their queue by default. But we can manually read the packet from the interface ourselves.
 
 ```
 B[0].receive().payload

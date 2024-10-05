@@ -1,7 +1,7 @@
 from typing import List
 
 from networksim.hardware.device import Device
-from networksim.hardware.port import Port
+from networksim.hardware.interface import Interface
 from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
 
@@ -25,6 +25,6 @@ class Application:
         packet: Packet,
         src: IPAddr,
         dst: IPAddr,
-        port: Port,
+        iface: Interface,
     ):
         pass
