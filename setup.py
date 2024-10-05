@@ -17,7 +17,14 @@ setup(
     python_requires="~=3.6",
     include_package_data=False,
     entry_points={
-        "console_scripts": ["networksim = networksim.cli:main"],
+        "console_scripts": ["networksim = networksim.ui:start_ui"],
+        "networksim_device_types": [
+            "Device = networksim.hardware.device:Device",
+            "IPDevices.IPDevice = networksim.hardware.device.ip.ipdevice:IPDevice",
+            "IPDevices.Router = networksim.hardware.device.ip.router:Router",
+            "Infrastructrue.Router = networksim.hardware.device.infrastructure.router:Router",
+            "Infrastructrue.Switch = networksim.hardware.device.infrastructure.switch:Switch",
+        ],
     },
     install_requires=[],
     tests_require=[],
