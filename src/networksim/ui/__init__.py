@@ -26,7 +26,7 @@ class NetworkSimUI(tk.Frame):
         self.build()
 
     def build(self):
-        self.viewPort = ViewPane(self)
+        self.viewPort = ViewPane(self, sim=self.sim)
         self.viewPort.grid(column=1, row=0, sticky="NSEW")
 
         self.objectList = ObjectListPane(
@@ -35,7 +35,7 @@ class NetworkSimUI(tk.Frame):
         )
         self.objectList.grid(column=0, row=0, rowspan=2, sticky="NSEW")
 
-        self.controlsPane = SimControlsPane(self)
+        self.controlsPane = SimControlsPane(self, sim=self.sim)
         self.controlsPane.grid(column=1, row=1, sticky="NSEW")
 
 

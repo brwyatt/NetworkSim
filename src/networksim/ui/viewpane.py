@@ -1,9 +1,13 @@
 import tkinter as tk
 
+from networksim.simulation import Simulation
+
 
 class ViewPane(tk.Canvas):
-    def __init__(self, master=None):
+    def __init__(self, master=None, *args, sim: Simulation):
         super().__init__(master=master, width=400, height=400, bg="white")
+
+        self.sim = sim
 
         # Create a rectangle
         self.rect = self.create_rectangle(50, 50, 100, 100, fill="blue")

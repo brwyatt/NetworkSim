@@ -2,8 +2,11 @@ import tkinter as tk
 
 
 class SimControlsPane(tk.Frame):
-    def __init__(self, master=None):
+    def __init__(self, master=None, *args, sim):
         super().__init__(master=master)
+
+        self.sim = sim
+
         self.build()
 
     def build(self):
