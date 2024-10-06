@@ -27,7 +27,7 @@ setup(
         ],
     },
     install_requires=[
-        "setuptools>=70.0.0,<76.0.0"
+        "setuptools>=50.0.0,<76.0.0"
     ],
     tests_require=[],
 )
