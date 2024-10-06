@@ -1,7 +1,9 @@
+import inspect
 import tkinter as tk
 from collections import defaultdict
 
 import pkg_resources
+from networksim.ui.addwindow import AddWindow
 from networksim.ui.toggleframe import ToggleFrame
 
 
@@ -10,8 +12,10 @@ def device_tree():
 
 
 class ObjectListPane(tk.Frame):
-    def __init__(self, master=None):
+    def __init__(self, master=None, *args, add_handler):
         super().__init__(master=master)
+
+        self.add_to_view = add_handler
 
         self.device_types = device_tree()
         for entry_point in pkg_resources.iter_entry_points(
@@ -53,7 +57,7 @@ class ObjectListPane(tk.Frame):
 
     def get_button_handler(self, name, cls):
         def handler():
-            print(f"NAME: {name}, CLS: {cls.__module__}.{cls.__name__}")
+            AddWindow(self, device_cls=cls, add_handler=self.add_to_view)
 
         return handler
 

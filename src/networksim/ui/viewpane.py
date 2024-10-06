@@ -28,3 +28,8 @@ class ViewPane(tk.Canvas):
         # Update the initial mouse position
         self.drag_start_x = event.x
         self.drag_start_y = event.y
+
+    def add_device(self, device):
+        print(f"ADDING: {device.name}")
+        self.sim.add_device(device)
+        # TODO: actually add a box to the canvas linked to this object
