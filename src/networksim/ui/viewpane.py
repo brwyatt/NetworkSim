@@ -5,6 +5,18 @@ from networksim.simulation import Simulation
 from networksim.ui.device_shape import DeviceShape
 
 
+def dedupe_click(func):
+    def handler(self, event):
+        if event.serial == self.last_event:
+            # Dedupe clicks passing through from shapes
+            return
+        self.last_event = event.serial
+
+        return func(self, event)
+
+    return handler
+
+
 class ViewPane(tk.Canvas):
     def __init__(self, master=None, *args, sim: Simulation):
         super().__init__(master=master, width=800, height=600, bg="white")
@@ -23,31 +35,19 @@ class ViewPane(tk.Canvas):
         if self.menu is not None:
             self.menu.destroy()
 
+    @dedupe_click
     def right_click(self, event):
-        if event.serial == self.last_event:
-            # Dedupe clicks passing through from shapes
-            return
-        self.last_event = event.serial
-
         self.remove_menu(event)
 
+    @dedupe_click
     def start_drag(self, event):
-        if event.serial == self.last_event:
-            # Dedupe clicks passing through from shapes
-            return
-        self.last_event = event.serial
-
         self.remove_menu(event)
 
         self.drag_start_x = event.x
         self.drag_start_y = event.y
 
+    @dedupe_click
     def drag(self, event):
-        if event.serial == self.last_event:
-            # Dedupe clicks passing through from shapes
-            return
-        self.last_event = event.serial
-
         dx = event.x - self.drag_start_x
         dy = event.y - self.drag_start_y
         self.move(tk.ALL, dx, dy)
