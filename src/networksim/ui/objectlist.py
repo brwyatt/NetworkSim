@@ -12,10 +12,11 @@ def device_tree():
 
 
 class ObjectListPane(tk.Frame):
-    def __init__(self, master=None, *args, add_handler):
+    def __init__(self, master=None, *args, add_handler, hide_scrollbar=False):
         super().__init__(master=master)
 
         self.add_to_view = add_handler
+        self.hide_scrollbar = hide_scrollbar
 
         self.device_types = device_tree()
         for entry_point in pkg_resources.iter_entry_points(
@@ -75,15 +76,14 @@ class ObjectListPane(tk.Frame):
             command=self.canvas.yview,
         )
 
-        self.scrollbar.pack(side="right", fill="y")
-
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.bind(
             "<Configure>",
-            lambda e: self.canvas.configure(
-                scrollregion=self.canvas.bbox("all"),
-            ),
+            self.update_canvas_size,
         )
+
+        if not self.hide_scrollbar:
+            self.scrollbar.pack(side="right", fill="y")
 
         self.inner_frame = tk.Frame(self.canvas)
         self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
@@ -100,9 +100,18 @@ class ObjectListPane(tk.Frame):
 
         self.update_canvas_size()
 
-    def update_canvas_size(self):
+    def update_canvas_size(self, event=None):
+        self.inner_frame.update_idletasks()
         self.canvas.update_idletasks()
+
+        if self.hide_scrollbar:
+            if self.inner_frame.winfo_reqheight() > self.canvas.winfo_height():
+                self.scrollbar.pack(side="right", fill="y")
+            else:
+                self.scrollbar.pack_forget()
+            self.canvas.update_idletasks()
+
         self.canvas.config(
             width=self.inner_frame.winfo_reqwidth(),
+            scrollregion=self.canvas.bbox("all"),
         )
-        self.canvas.config(scrollregion=self.canvas.bbox("all"))
