@@ -36,6 +36,7 @@ class AddWindow(tk.Toplevel):
         self.cancel = tk.Button(self, text="Cancel", command=self.close)
         self.cancel.grid(column=1, row=2, sticky="SW")
 
+        self.resizable(False, False)
         self.grab_set()
 
     def submit(self):

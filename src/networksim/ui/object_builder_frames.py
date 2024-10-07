@@ -45,7 +45,17 @@ class ListBuilderFrame(tk.Frame):
                 field["label"].configure(text=f"{row}: ")
                 field["field"].grid(row=row)
 
+            self.update_size()
+
         return handler
+
+    def update_size(self):
+        toplevel = self.winfo_toplevel()
+        toplevel.update_idletasks()
+        toplevel.update()
+        reqwidth = toplevel.winfo_reqwidth()
+        reqheight = toplevel.winfo_reqheight()
+        self.winfo_toplevel().geometry(f"{reqwidth}x{reqheight}")
 
     def add_item(self):
         row = len(self.fields)
@@ -74,6 +84,8 @@ class ListBuilderFrame(tk.Frame):
         }
 
         self.fields.append(field_def)
+
+        self.update_size()
 
     def get(self):
         return [x["var"].get() for x in self.fields]
