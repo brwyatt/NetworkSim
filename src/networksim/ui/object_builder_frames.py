@@ -83,6 +83,7 @@ class ListBuilderFrame(tk.Frame):
         if state is not None:
             self.add_button.config(state=state)
             for field in self.fields:
+                field["del_btn"].config(state=state)
                 field["label"].config(state=state)
                 field["field"].config(state=state)
 
@@ -184,7 +185,7 @@ class ObjectBuilderFrame(tk.Frame):
                         field,
                     ),
                 )
-                toggle.grid(row=row, column=0)
+                toggle.grid(row=row, column=0, sticky="N")
                 self.fields[name]["widgets"]["toggle"] = toggle
 
             row += 1
