@@ -28,24 +28,52 @@ class ListBuilderFrame(tk.Frame):
         )
         self.add_button.grid(row=1, column=0, sticky="W")
 
+    def get_del_handler(self, widget):
+        def handler():
+            index = widget.grid_info()["row"]
+
+            field = self.fields[index]
+            del self.fields[index]
+            field["del_btn"].destroy()
+            field["label"].destroy()
+            field["field"].destroy()
+
+            for field in self.fields[index:]:
+                row = field["del_btn"].grid_info()["row"] - 1
+                field["del_btn"].grid(row=row)
+                field["label"].grid(row=row)
+                field["label"].configure(text=f"{row}: ")
+                field["field"].grid(row=row)
+
+        return handler
+
     def add_item(self):
-        label, var, field, sticky = tk.Label(self.list_frame), *get_var_fields(
-            self.list_frame,
-            self.cls,
-        )
         row = len(self.fields)
-        self.fields.append(
-            {
-                "label": label,
-                "var": var,
-                "field": field,
-            },
+
+        del_btn = tk.Button(self.list_frame, text="X")
+        del_btn.config(command=self.get_del_handler(del_btn))
+        del_btn.grid(row=row, column=0, sticky="N")
+
+        label = tk.Label(self.list_frame, text=f"{row}: ")
+        label.grid(row=row, column=1, sticky="NE")
+
+        var, field, sticky = (
+            *get_var_fields(
+                self.list_frame,
+                self.cls,
+            ),
         )
 
-        label.configure(text=f"{row}: ")
-        label.grid(row=row, column=0, sticky="NE")
+        field.grid(row=row, column=2, sticky=sticky)
 
-        field.grid(row=row, column=1, sticky=sticky)
+        field_def = {
+            "del_btn": del_btn,
+            "label": label,
+            "var": var,
+            "field": field,
+        }
+
+        self.fields.append(field_def)
 
     def get(self):
         return [x["var"].get() for x in self.fields]
