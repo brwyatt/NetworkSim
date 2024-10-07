@@ -10,5 +10,7 @@ class SimControlsPane(tk.Frame):
         self.build()
 
     def build(self):
-        self.step_button = tk.Button(self, text="Step")
-        self.step_button.pack()
+        self.step_button = tk.Button(self, text="Step", command=self.sim.step)
+        self.step_button.pack(side="left")
+        self.show_button = tk.Button(self, text="Show", command=self.sim.show)
+        self.show_button.pack(side="left")
