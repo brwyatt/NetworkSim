@@ -1,4 +1,5 @@
 import logging
+from typing import List
 from typing import Optional
 
 from networksim.hardware.device.ip.ipdevice import IPDevice
@@ -11,14 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 class Router(IPDevice):
+    default_iface_count = 2
+
     def __init__(
         self,
         name: Optional[str] = None,
-        iface_count: int = 2,
         auto_process: bool = True,
+        ifaces: Optional[List[Interface]] = None,
         process_rate: Optional[int] = None,
     ):
-        super().__init__(name, iface_count, auto_process, process_rate)
+        super().__init__(
+            name=name,
+            auto_process=auto_process,
+            ifaces=ifaces,
+            process_rate=process_rate,
+        )
 
         self.ip = IPStack(forward_packets=True)
 

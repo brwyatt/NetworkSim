@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Type
 
@@ -14,11 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class Device:
+    default_iface_count = 1
+
     def __init__(
         self,
         name: Optional[str] = None,
-        iface_count: int = 1,
         auto_process: bool = False,
+        ifaces: Optional[List[Interface]] = None,
         process_rate: Optional[int] = None,
     ):
         self.base_MAC = randbytes(5)
@@ -30,8 +33,11 @@ class Device:
         self.auto_process = auto_process
         self.time = 0
 
-        for x in range(1, iface_count + 1):
-            self.add_iface(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
+        if ifaces is None:
+            for x in range(1, self.default_iface_count + 1):
+                self.add_iface(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
+        else:
+            self.ifaces.extend(ifaces)
 
         # By default, be able to process combined full (max) line-rate
         self.process_rate = (
