@@ -6,15 +6,95 @@ from typing import Type
 from typing import Union
 
 
+class ListBuilderFrame(tk.Frame):
+    def __init__(self, master=None, *args, cls: Type):
+        super().__init__(master=master)
+        self.cls = cls
+
+        self.build()
+
+    def build(self):
+        self.fields = []
+
+        self.columnconfigure(0, weight=1)
+
+        self.list_frame = tk.Frame(self)
+        self.list_frame.grid(row=0, column=0, sticky="EW")
+
+        self.add_button = tk.Button(
+            self,
+            text="Add Item",
+            command=self.add_item,
+        )
+        self.add_button.grid(row=1, column=0, sticky="W")
+
+    def add_item(self):
+        label, var, field, sticky = tk.Label(self.list_frame), *get_var_fields(
+            self.list_frame,
+            self.cls,
+        )
+        row = len(self.fields)
+        self.fields.append(
+            {
+                "label": label,
+                "var": var,
+                "field": field,
+            },
+        )
+
+        label.configure(text=f"{row}: ")
+        label.grid(row=row, column=0, sticky="NE")
+
+        field.grid(row=row, column=1, sticky=sticky)
+
+    def get(self):
+        return [x["var"].get() for x in self.fields]
+
+    def config(self, *args, state=None, **kwargs):
+        super().config(*args, **kwargs)
+        if state is not None:
+            self.add_button.config(state=state)
+            for field in self.fields:
+                field["label"].config(state=state)
+                field["field"].config(state=state)
+
+
+def get_var_fields(master, param_type, sticky="EW"):
+    if param_type in (str, bytes):
+        var = tk.StringVar()
+        field = tk.Entry(master, textvariable=var)
+    elif param_type is int:
+        var = tk.IntVar()
+        field = tk.Spinbox(
+            master,
+            textvariable=var,
+            validate="key",
+            validatecommand=(
+                master.register(lambda P: P.isdigit()),
+                "%P",
+            ),
+        )
+    elif param_type is bool:
+        sticky = "W"
+        var = tk.IntVar()
+        field = tk.Checkbutton(
+            master,
+            variable=var,
+        )
+    elif get_origin(param_type) is list:
+        var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
+    else:
+        var = field = ObjectBuilderFrame(master, cls=param_type)
+
+    return var, field, sticky
+
+
 class ObjectBuilderFrame(tk.Frame):
     def __init__(self, master=None, *args, cls: Type):
         super().__init__(master=master)
         self.cls = cls
 
         self.build_fields()
-
-    def int_validate(self, P):
-        return P.isdigit()
 
     def build_fields(self):
         self.fields = {}
@@ -49,34 +129,11 @@ class ObjectBuilderFrame(tk.Frame):
                 text=self.fields[name]["title"] + ": ",
                 state="normal" if not optional else "disabled",
             )
-            label.grid(row=row, column=1, sticky="E")
+            label.grid(row=row, column=1, sticky="NE")
             self.fields[name]["widgets"]["label"] = label
 
             sticky = "EW"
-            if param_type is str:
-                var = tk.StringVar()
-                field = tk.Entry(self, textvariable=var)
-            elif param_type is int:
-                var = tk.IntVar()
-                field = tk.Spinbox(
-                    self,
-                    textvariable=var,
-                    validate="key",
-                    validatecommand=(
-                        self.register(self.int_validate),
-                        "%P",
-                    ),
-                )
-            elif param_type is bool:
-                sticky = "W"
-                var = tk.IntVar()
-                field = tk.Checkbutton(
-                    self,
-                    variable=var,
-                )
-            else:
-                var = tk.StringVar()
-                field = tk.Entry(self)
+            var, field, sticky = get_var_fields(self, param_type, sticky)
 
             field.grid(row=row, column=2, sticky=sticky)
             field.config(state="normal" if not optional else "disabled")
@@ -125,9 +182,30 @@ class ObjectBuilderFrame(tk.Frame):
             if not enabled:
                 continue
             value = v["value"].get()
-            if not isinstance(value, v["type"]):
-                value = v["type"](v["value"].get())
+
+            # Get the real type
+            var_type = get_origin(v["type"])
+            if var_type is None:
+                var_type = v["type"]
+
+            # Handle cases where we get something weird back, like an int for a bool
+            if not isinstance(value, var_type):
+                value = var_type(v["value"].get())
             params[k] = value
             print(f" * {k}: {params[k]}")
 
         return self.cls(**params)
+
+    def config(self, *args, state=None, **kwargs):
+        super().config(*args, **kwargs)
+        if state is not None:
+            for field in self.fields.values():
+                widgets = field.get("widgets", {})
+                for name, widget in widgets.items():
+                    widget.config(
+                        state=(
+                            state
+                            if name == "toggle" or bool(field["enabled"].get())
+                            else "disabled"
+                        ),
+                    )

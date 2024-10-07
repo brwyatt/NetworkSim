@@ -2,7 +2,7 @@ import tkinter as tk
 from typing import Type
 
 from networksim.hardware.device import Device
-from networksim.ui.object_builder_frame import ObjectBuilderFrame
+from networksim.ui.object_builder_frames import ObjectBuilderFrame
 
 
 class AddWindow(tk.Toplevel):
