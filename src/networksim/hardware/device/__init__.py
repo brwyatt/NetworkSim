@@ -4,11 +4,15 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 
 from networksim.hardware.interface import Interface
 from networksim.helpers import randbytes
 from networksim.hwid import HWID
 from networksim.packet import Packet
+
+if TYPE_CHECKING:
+    from networksim.application import Application
 
 
 logger = logging.getLogger(__name__)
