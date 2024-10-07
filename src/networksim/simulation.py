@@ -100,6 +100,18 @@ class Simulation:
         if device not in self.devices:
             self.devices.append(device)
 
+    def delete_device(self, device: Device):
+        # disconnect from cables from device
+        for cable in self.cables:
+            if cable.a in device.ifaces:
+                cable.a = None
+            if cable.b in device.ifaces:
+                cable.b = None
+
+        # remove device from simulation
+        if device in self.devices:
+            self.devices.remove(device)
+
     def add_cable(self, cable: Cable):
         if cable not in self.cables:
             self.cables.append(cable)
