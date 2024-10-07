@@ -14,11 +14,17 @@ class ViewPane(tk.Canvas):
         self.devices = []
         self.menu = None
 
-        self.bind("<Button-1>", self.remove_menu)
+        self.bind("<ButtonPress-1>", self.remove_menu)
+        self.bind("<ButtonPress-3>", self.remove_menu)
+        self.last_event = 0
 
     def remove_menu(self, event):
+        if event.serial == self.last_event:
+            # Dedupe clicks passing through from shapes
+            return
         if self.menu is not None:
             self.menu.destroy()
+        self.last_event = event.serial
 
     def add_device(self, device: Device):
         print(f"ADDING: {device.name}")

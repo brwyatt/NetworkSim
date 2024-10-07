@@ -49,7 +49,7 @@ class DeviceShape:
         for shape in self.shapes:
             canvas.tag_bind(shape, "<ButtonPress-1>", self.on_start)
             canvas.tag_bind(shape, "<B1-Motion>", self.on_drag)
-            canvas.tag_bind(shape, "<Button-3>", self.right_click)
+            canvas.tag_bind(shape, "<ButtonPress-3>", self.right_click)
 
     def delete(self):
         for shape in self.shapes:
