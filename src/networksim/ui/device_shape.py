@@ -47,8 +47,8 @@ class DeviceShape:
 
         self.shapes = (self.bgrect, self.rect, self.text)
         for shape in self.shapes:
-            canvas.tag_bind(shape, "<ButtonPress-1>", self.on_start)
-            canvas.tag_bind(shape, "<B1-Motion>", self.on_drag)
+            canvas.tag_bind(shape, "<ButtonPress-1>", self.start_drag)
+            canvas.tag_bind(shape, "<B1-Motion>", self.drag)
             canvas.tag_bind(shape, "<ButtonPress-3>", self.right_click)
 
     def delete(self):
@@ -56,6 +56,7 @@ class DeviceShape:
             self.canvas.delete(shape)
 
     def right_click(self, event):
+        self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
 
         menu = tk.Menu(self.canvas, tearoff=0)
@@ -66,7 +67,8 @@ class DeviceShape:
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
 
-    def on_start(self, event):
+    def start_drag(self, event):
+        self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
 
         self.drag_start_x = event.x
@@ -75,7 +77,8 @@ class DeviceShape:
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
 
-    def on_drag(self, event):
+    def drag(self, event):
+        self.canvas.last_event = event.serial
         dx = event.x - self.drag_start_x
         dy = event.y - self.drag_start_y
 
