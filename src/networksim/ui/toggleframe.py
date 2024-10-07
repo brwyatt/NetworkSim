@@ -2,13 +2,21 @@ import tkinter as tk
 
 
 class ToggleFrame(tk.Frame):
-    def __init__(self, master=None, title="TOGGLE", show_default=False):
+    def __init__(
+        self,
+        master=None,
+        title="TOGGLE",
+        show_default=False,
+        toggle_update=None,
+    ):
         super().__init__(master=master)
 
         bg_color = "blue"
 
         # Invert, because we render by calling `toggle()`
         self.show = not show_default
+
+        self.toggle_update = toggle_update
 
         self.columnconfigure(0, weight=1)
 
@@ -54,3 +62,6 @@ class ToggleFrame(tk.Frame):
             self.content_holder.grid_forget()
             button_text[0] = "+"
         self.title_button.configure(text="".join(button_text))
+
+        if self.toggle_update is not None:
+            self.toggle_update()
