@@ -26,8 +26,6 @@ setup(
             "Infrastructrue.Switch = networksim.hardware.device.infrastructure.switch:Switch",
         ],
     },
-    install_requires=[
-        "setuptools>=50.0.0,<76.0.0"
-    ],
+    install_requires=["setuptools>=50.0.0,<76.0.0"],
     tests_require=[],
 )
