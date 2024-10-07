@@ -12,6 +12,13 @@ class ViewPane(tk.Canvas):
         self.sim = sim
 
         self.devices = []
+        self.menu = None
+
+        self.bind("<Button-1>", self.remove_menu)
+
+    def remove_menu(self, event):
+        if self.menu is not None:
+            self.menu.destroy()
 
     def add_device(self, device: Device):
         print(f"ADDING: {device.name}")

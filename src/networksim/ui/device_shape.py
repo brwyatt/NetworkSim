@@ -56,14 +56,19 @@ class DeviceShape:
             self.canvas.delete(shape)
 
     def right_click(self, event):
+        self.canvas.remove_menu(event)
+
         menu = tk.Menu(self.canvas, tearoff=0)
         menu.add_command(
             label="Delete",
             command=lambda: self.canvas.delete_device(self),
         )
         menu.post(event.x_root, event.y_root)
+        self.canvas.menu = menu
 
     def on_start(self, event):
+        self.canvas.remove_menu(event)
+
         self.drag_start_x = event.x
         self.drag_start_y = event.y
 
