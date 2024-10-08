@@ -1,6 +1,6 @@
 import inspect
 import tkinter as tk
-from typing import get_args
+from typing import List, Optional, get_args
 from typing import get_origin
 from typing import Type
 from typing import Union
@@ -131,9 +131,10 @@ def get_var_fields(master, param_type, sticky="EW"):
 
 
 class ObjectBuilderFrame(tk.Frame):
-    def __init__(self, master=None, *args, cls: Type):
+    def __init__(self, master=None, *args, cls: Type, ignore_list: Optional[List[str]] = None):
         super().__init__(master=master)
         self.cls = cls
+        self.ignore_list = ignore_list if ignore_list is not None else []
 
         self.build_fields()
 
@@ -145,6 +146,8 @@ class ObjectBuilderFrame(tk.Frame):
         row = 0
         sig = inspect.signature(self.cls)
         for name, param in sig.parameters.items():
+            if name in self.ignore_list:
+                continue
             optional = get_origin(param.annotation) is Union and type(
                 None,
             ) in get_args(param.annotation)
