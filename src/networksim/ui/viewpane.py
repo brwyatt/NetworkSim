@@ -1,8 +1,11 @@
 import tkinter as tk
 
+from networksim.hardware.cable import Cable
 from networksim.hardware.device import Device
 from networksim.hardware.interface import AlreadyConnectedException
+from networksim.hardware.interface import Interface
 from networksim.simulation import Simulation
+from networksim.ui.addwindow import AddWindow
 from networksim.ui.device_shape import DeviceShape
 from networksim.ui.errorwindow import ErrorWindow
 
@@ -29,6 +32,9 @@ class ViewPane(tk.Canvas):
         self.menu = None
         self.connect_start = None
 
+        self.drag_start_x = None
+        self.drag_start_y = None
+
         self.bind("<ButtonPress-1>", self.start_drag)
         self.bind("<B1-Motion>", self.drag)
         self.bind("<ButtonPress-3>", self.right_click)
@@ -51,6 +57,8 @@ class ViewPane(tk.Canvas):
 
     @dedupe_click
     def drag(self, event):
+        if self.drag_start_x is None or self.drag_start_y is None:
+            return
         dx = event.x - self.drag_start_x
         dy = event.y - self.drag_start_y
         self.move(tk.ALL, dx, dy)
@@ -74,17 +82,35 @@ class ViewPane(tk.Canvas):
         print(f"Starting connect: {device.device.name}")
         self.connect_start = device.device
 
-    def end_connect(self, device: DeviceShape):
+    def select_connect_end(self, device: DeviceShape):
         print(f"Connecting to: {device.device.name}")
-        try:
-            self.sim.connect_devices(self.connect_start, device.device)
-        except AlreadyConnectedException:
-            ErrorWindow(
-                self,
-                text=f"One or more devices already connected:\n* {self.connect_start.name}\n* {device.device.name}",
-            )
-        finally:
-            self.connect_start = None
+        AddWindow(
+            self,
+            cls=Cable,
+            callback=self.get_end_connect_handler(
+                self.connect_start,
+                device.device,
+            ),
+            ignore_list=["a", "b"],
+        )
+
+    def get_end_connect_handler(self, a: Device, b: Device):
+        def handler(cable: Cable):
+            try:
+                cable.a = [x for x in a.ifaces if not x.connected][0]
+                cable.b = [x for x in b.ifaces if not x.connected][0]
+                self.sim.add_cable(cable)
+            except IndexError:
+                cable.a = None
+                cable.b = None
+                ErrorWindow(
+                    self,
+                    text=f"One or more devices already connected:\n* {a.name}\n* {b.name}",
+                )
+            finally:
+                self.connect_start = None
+
+        return handler
 
     def delete_device(self, device: DeviceShape):
         print(f"DELETING: {device.device.name}")

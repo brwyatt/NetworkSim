@@ -80,7 +80,7 @@ class DeviceShape:
             self.canvas.connect_start is not None
             and self.device != self.canvas.connect_start
         ):
-            self.canvas.end_connect(self)
+            self.canvas.select_connect_end(self)
         self.start_drag(event)
 
     def start_drag(self, event):

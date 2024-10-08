@@ -80,7 +80,7 @@ class ObjectListPane(tk.Frame):
 
     def get_button_handler(self, name, cls):
         def handler():
-            AddWindow(self, device_cls=cls, add_handler=self.add_to_view)
+            AddWindow(self, cls=cls, callback=self.add_to_view)
 
         return handler
 
