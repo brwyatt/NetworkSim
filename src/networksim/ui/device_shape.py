@@ -61,11 +61,13 @@ class DeviceShape:
 
     def create_iface_menu(self, master, handler_generator):
         iface_menu = tk.Menu(master, tearoff=False)
+        iface_num = -1
         for iface in self.device.ifaces:
+            iface_num += 1
             if iface.connected:
                 continue
             iface_menu.add_command(
-                label=str(iface.hwid),
+                label=f"{iface_num} - ({str(iface.hwid)})",
                 command=handler_generator(iface),
             )
 
