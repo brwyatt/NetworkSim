@@ -1,8 +1,10 @@
 import tkinter as tk
 
 from networksim.hardware.device import Device
+from networksim.hardware.interface import AlreadyConnectedException
 from networksim.simulation import Simulation
 from networksim.ui.device_shape import DeviceShape
+from networksim.ui.errorwindow import ErrorWindow
 
 
 def dedupe_click(func):
@@ -25,6 +27,7 @@ class ViewPane(tk.Canvas):
 
         self.devices = []
         self.menu = None
+        self.connect_start = None
 
         self.bind("<ButtonPress-1>", self.start_drag)
         self.bind("<B1-Motion>", self.drag)
@@ -67,8 +70,24 @@ class ViewPane(tk.Canvas):
         )
         self.devices.append(shape)
 
+    def start_connect(self, device: DeviceShape):
+        print(f"Starting connect: {device.device.name}")
+        self.connect_start = device.device
+
+    def end_connect(self, device: DeviceShape):
+        print(f"Connecting to: {device.device.name}")
+        try:
+            self.sim.connect_devices(self.connect_start, device.device)
+        except AlreadyConnectedException:
+            ErrorWindow(
+                self,
+                text=f"One or more devices already connected:\n* {self.connect_start.name}\n* {device.device.name}",
+            )
+        finally:
+            self.connect_start = None
+
     def delete_device(self, device: DeviceShape):
         print(f"DELETING: {device.device.name}")
-        self.sim.delete_device(device.device)
+        self.sim.delete_device(device.device, remove_cables=True)
         device.delete()
         self.devices.remove(device)

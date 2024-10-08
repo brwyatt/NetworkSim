@@ -1,14 +1,18 @@
 import tkinter as tk
 from typing import Optional
+from typing import TYPE_CHECKING
 
 from networksim.hardware.device import Device
+
+if TYPE_CHECKING:
+    from networksim.ui.viewpane import ViewPane
 
 
 class DeviceShape:
     def __init__(
         self,
         device: Device,
-        canvas: tk.Canvas,
+        canvas: "ViewPane",
         x: int,
         y: int,
         width: int = 50,
@@ -47,7 +51,7 @@ class DeviceShape:
 
         self.shapes = (self.bgrect, self.rect, self.text)
         for shape in self.shapes:
-            canvas.tag_bind(shape, "<ButtonPress-1>", self.start_drag)
+            canvas.tag_bind(shape, "<ButtonPress-1>", self.left_click)
             canvas.tag_bind(shape, "<B1-Motion>", self.drag)
             canvas.tag_bind(shape, "<ButtonPress-3>", self.right_click)
 
@@ -64,8 +68,20 @@ class DeviceShape:
             label="Delete",
             command=lambda: self.canvas.delete_device(self),
         )
+        menu.add_command(
+            label="Connect",
+            command=lambda: self.canvas.start_connect(self),
+        )
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
+
+    def left_click(self, event):
+        if (
+            self.canvas.connect_start is not None
+            and self.device != self.canvas.connect_start
+        ):
+            self.canvas.end_connect(self)
+        self.start_drag(event)
 
     def start_drag(self, event):
         self.canvas.last_event = event.serial
@@ -78,6 +94,9 @@ class DeviceShape:
             self.canvas.tag_raise(shape)
 
     def drag(self, event):
+        if self.canvas.connect_start is not None:
+            return
+
         self.canvas.last_event = event.serial
         dx = event.x - self.drag_start_x
         dy = event.y - self.drag_start_y
