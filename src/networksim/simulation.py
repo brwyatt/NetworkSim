@@ -52,9 +52,13 @@ class Simulation:
                     break
 
             if iface_a is None:
-                iface_a = str(cable.a.hwid)
+                iface_a = "Unconnected"
+                if cable.a is not None:
+                    iface_a = str(cable.a.hwid)
             if iface_b is None:
-                iface_b = str(cable.b.hwid)
+                iface_b = "Unconnected"
+                if cable.b is not None:
+                    iface_b = str(cable.b.hwid)
 
             print(
                 f" * {iface_a}/{iface_b}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
