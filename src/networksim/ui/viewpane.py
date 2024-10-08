@@ -35,7 +35,7 @@ class ViewPane(tk.Canvas):
         self.drag_start_x = None
         self.drag_start_y = None
 
-        self.bind("<ButtonPress-1>", self.start_drag)
+        self.bind("<ButtonPress-1>", self.left_click)
         self.bind("<B1-Motion>", self.drag)
         self.bind("<ButtonPress-3>", self.right_click)
         self.last_event = 0
@@ -47,11 +47,15 @@ class ViewPane(tk.Canvas):
     @dedupe_click
     def right_click(self, event):
         self.remove_menu(event)
+        self.connect_start = None
 
     @dedupe_click
-    def start_drag(self, event):
+    def left_click(self, event):
         self.remove_menu(event)
+        self.connect_start = None
+        self.start_drag(event)
 
+    def start_drag(self, event):
         self.drag_start_x = event.x
         self.drag_start_y = event.y
 
@@ -78,34 +82,34 @@ class ViewPane(tk.Canvas):
         )
         self.devices.append(shape)
 
-    def start_connect(self, device: DeviceShape):
-        print(f"Starting connect: {device.device.name}")
-        self.connect_start = device.device
+    def start_connect(self, iface: Interface):
+        print(f"Starting connect: {iface}")
+        self.connect_start = iface
 
-    def select_connect_end(self, device: DeviceShape):
-        print(f"Connecting to: {device.device.name}")
+    def select_connect_end(self, iface: Interface):
+        print(f"Connecting to: {iface}")
         AddWindow(
             self,
             cls=Cable,
             callback=self.get_end_connect_handler(
                 self.connect_start,
-                device.device,
+                iface,
             ),
             ignore_list=["a", "b"],
         )
 
-    def get_end_connect_handler(self, a: Device, b: Device):
+    def get_end_connect_handler(self, a: Interface, b: Interface):
         def handler(cable: Cable):
             try:
-                cable.a = [x for x in a.ifaces if not x.connected][0]
-                cable.b = [x for x in b.ifaces if not x.connected][0]
+                cable.a = a
+                cable.b = b
                 self.sim.add_cable(cable)
-            except IndexError:
+            except AlreadyConnectedException:
                 cable.a = None
                 cable.b = None
                 ErrorWindow(
                     self,
-                    text=f"One or more devices already connected:\n* {a.name}\n* {b.name}",
+                    text=f"One or more ports already connected:\n* {a.hwid}\n* {b.hwid}",
                 )
             finally:
                 self.connect_start = None

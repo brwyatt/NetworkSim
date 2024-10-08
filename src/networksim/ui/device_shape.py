@@ -59,6 +59,18 @@ class DeviceShape:
         for shape in self.shapes:
             self.canvas.delete(shape)
 
+    def create_iface_menu(self, master, handler_generator):
+        iface_menu = tk.Menu(master, tearoff=False)
+        for iface in self.device.ifaces:
+            if iface.connected:
+                continue
+            iface_menu.add_command(
+                label=str(iface.hwid),
+                command=handler_generator(iface),
+            )
+
+        return iface_menu
+
     def right_click(self, event):
         self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
@@ -68,27 +80,48 @@ class DeviceShape:
             label="Delete",
             command=lambda: self.canvas.delete_device(self),
         )
-        menu.add_command(
-            label="Connect",
-            command=lambda: self.canvas.start_connect(self),
+        iface_menu = self.create_iface_menu(
+            menu,
+            self.get_start_connect_handler,
         )
+        menu.add_cascade(label="Connect", menu=iface_menu)
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
+
+    def get_start_connect_handler(self, iface):
+        def handler():
+            self.canvas.start_connect(iface)
+
+        return handler
+
+    def get_end_connect_handler(self, iface):
+        def handler():
+            self.canvas.select_connect_end(iface)
+
+        return handler
 
     def left_click(self, event):
         if (
             self.canvas.connect_start is not None
-            and self.device != self.canvas.connect_start
+            and self.canvas.connect_start not in (self.device.ifaces)
         ):
-            self.canvas.select_connect_end(self)
+            self.canvas.remove_menu(event)
+            self.canvas.last_event = event.serial
+            menu = self.create_iface_menu(
+                self.canvas,
+                self.get_end_connect_handler,
+            )
+            menu.post(event.x_root, event.y_root)
+            self.canvas.menu = menu
         self.start_drag(event)
 
     def start_drag(self, event):
         self.canvas.last_event = event.serial
-        self.canvas.remove_menu(event)
 
         self.drag_start_x = event.x
         self.drag_start_y = event.y
+        self.canvas.drag_start_x = None
+        self.canvas.drag_start_y = None
 
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
