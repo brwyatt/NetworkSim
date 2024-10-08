@@ -12,6 +12,16 @@ def device_tree():
 
 
 class ObjectListPane(tk.Frame):
+    header_bg = "navy"
+    header_fg = "lightgrey"
+    header_active_bg = "blue"
+    header_active_fg = "lightgrey"
+
+    item_bg = "darkgreen"
+    item_fg = "lightgrey"
+    item_active_bg = "green"
+    item_active_fg = "lightgrey"
+
     def __init__(self, master=None, *args, add_handler, hide_scrollbar=False):
         super().__init__(master=master)
 
@@ -50,6 +60,10 @@ class ObjectListPane(tk.Frame):
                     master=parent,
                     title=name,
                     toggle_update=self.update_canvas_size,
+                    bg=self.header_bg,
+                    fg=self.header_fg,
+                    activebackground=self.header_active_bg,
+                    activeforeground=self.header_active_fg,
                 )
                 self.create_widgets_from_device_types(widget.contents, value)
             else:
@@ -57,6 +71,10 @@ class ObjectListPane(tk.Frame):
                     parent,
                     text=name,
                     command=self.get_button_handler(name, value),
+                    bg=self.item_bg,
+                    fg=self.item_fg,
+                    activebackground=self.item_active_bg,
+                    activeforeground=self.item_active_fg,
                 )
             widget.pack(fill="x")
 
@@ -93,6 +111,10 @@ class ObjectListPane(tk.Frame):
             title="Devices",
             show_default=True,
             toggle_update=self.update_canvas_size,
+            bg=self.header_bg,
+            fg=self.header_fg,
+            activebackground=self.header_active_bg,
+            activeforeground=self.header_active_fg,
         )
 
         self.root_toggle_frame.pack(fill="x")

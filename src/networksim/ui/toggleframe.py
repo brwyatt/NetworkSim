@@ -8,10 +8,12 @@ class ToggleFrame(tk.Frame):
         title="TOGGLE",
         show_default=False,
         toggle_update=None,
+        bg=None,
+        fg=None,
+        activebackground=None,
+        activeforeground=None,
     ):
         super().__init__(master=master)
-
-        bg_color = "blue"
 
         # Invert, because we render by calling `toggle()`
         self.show = not show_default
@@ -22,9 +24,8 @@ class ToggleFrame(tk.Frame):
 
         self.title_frame = tk.Frame(
             self,
-            relief="raised",
             borderwidth=1,
-            bg=bg_color,
+            bg=bg,
         )
         self.title_frame.grid(row=0, column=0, sticky="NEW")
         self.title_frame.columnconfigure(0, weight=1)
@@ -32,19 +33,24 @@ class ToggleFrame(tk.Frame):
         self.title_button = tk.Button(
             self.title_frame,
             text="* " + title,
-            bg=bg_color,
+            bd=0,
+            bg=bg,
+            fg=fg,
+            activebackground=activebackground,
+            activeforeground=activeforeground,
+            relief="flat",
             anchor="w",
             command=self.toggle,
         )
         self.title_button.grid(row=0, column=0, sticky="EW")
 
-        self.content_holder = tk.Frame(self, bg=bg_color)
+        self.content_holder = tk.Frame(self, bg=bg)
         self.content_holder.columnconfigure(1, weight=1)
 
         self.content_spacer = tk.Label(
             self.content_holder,
             width=2,
-            bg=bg_color,
+            bg=bg,
         )
         self.content_spacer.grid(row=0, column=0, sticky="W")
         self.contents = tk.Frame(self.content_holder)
