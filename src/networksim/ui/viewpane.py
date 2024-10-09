@@ -1,4 +1,5 @@
 import tkinter as tk
+from typing import Tuple
 
 from networksim.hardware.cable import Cable
 from networksim.hardware.device import Device
@@ -6,6 +7,7 @@ from networksim.hardware.interface import AlreadyConnectedException
 from networksim.hardware.interface import Interface
 from networksim.simulation import Simulation
 from networksim.ui.addwindow import AddWindow
+from networksim.ui.cable_shape import CableShape
 from networksim.ui.device_shape import DeviceShape
 from networksim.ui.errorwindow import ErrorWindow
 
@@ -31,6 +33,7 @@ class ViewPane(tk.Canvas):
         self.devices = []
         self.menu = None
         self.connect_start = None
+        self.cables = []
 
         self.drag_start_x = None
         self.drag_start_y = None
@@ -82,42 +85,66 @@ class ViewPane(tk.Canvas):
         )
         self.devices.append(shape)
 
-    def start_connect(self, iface: Interface):
-        print(f"Starting connect: {iface}")
-        self.connect_start = iface
+    def start_connect(self, device: DeviceShape, iface: Interface):
+        print(f"Starting connect: {device.device.name} - {iface.hwid}")
+        self.connect_start = (device, iface)
 
-    def select_connect_end(self, iface: Interface):
-        print(f"Connecting to: {iface}")
+    def select_connect_end(self, device: DeviceShape, iface: Interface):
+        print(f"Connecting to: {device.device.name} - {iface.hwid}")
         AddWindow(
             self,
             cls=Cable,
             callback=self.get_end_connect_handler(
                 self.connect_start,
-                iface,
+                (device, iface),
             ),
             ignore_list=["a", "b"],
         )
 
-    def get_end_connect_handler(self, a: Interface, b: Interface):
+    def get_end_connect_handler(
+        self,
+        a: Tuple[DeviceShape, Interface],
+        b: Tuple[DeviceShape, Interface],
+    ):
         def handler(cable: Cable):
             try:
-                cable.a = a
-                cable.b = b
+                cable.a = a[1]
+                cable.b = b[1]
                 self.sim.add_cable(cable)
             except AlreadyConnectedException:
                 cable.a = None
                 cable.b = None
                 ErrorWindow(
                     self,
-                    text=f"One or more ports already connected:\n* {a.hwid}\n* {b.hwid}",
+                    text=f"One or more ports already connected:\n* {a[0].device.name} - {a[1].hwid}\n* {b[0].device.name} - {b[1].hwid}",
                 )
+                return
             finally:
                 self.connect_start = None
 
+            shape = CableShape(
+                cable=cable,
+                canvas=self,
+                device_a=a[0],
+                device_b=b[0],
+            )
+            self.cables.append(shape)
+
         return handler
+
+    def delete_cable(self, cable: Cable):
+        try:
+            self.sim.delete_cable(cable.cable)
+        except ValueError:
+            pass
+        cable.delete()
+        self.cables.remove(cable)
 
     def delete_device(self, device: DeviceShape):
         print(f"DELETING: {device.device.name}")
         self.sim.delete_device(device.device, remove_cables=True)
         device.delete()
         self.devices.remove(device)
+        for cable in list(self.cables):
+            if device == cable.a or device == cable.b:
+                self.delete_cable(cable)

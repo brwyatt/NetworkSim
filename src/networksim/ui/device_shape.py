@@ -26,6 +26,8 @@ class DeviceShape:
         self.width = width
         self.height = height
 
+        self.update_handlers = []
+
         font_size = 10
 
         self.bgrect = canvas.create_rectangle(
@@ -55,6 +57,22 @@ class DeviceShape:
             canvas.tag_bind(shape, "<B1-Motion>", self.drag)
             canvas.tag_bind(shape, "<ButtonPress-3>", self.right_click)
 
+    def send_updates(self):
+        for handler in self.update_handlers:
+            handler()
+
+    def add_update_handler(self, handler):
+        if handler not in self.update_handlers:
+            self.update_handlers.append(handler)
+
+    def del_update_handler(self, handler):
+        if handler in self.update_handlers:
+            self.update_handlers.remove(handler)
+
+    def get_midpoint(self):
+        x1, y1, x2, y2 = self.canvas.coords(self.rect)
+        return (x1 + ((x2 - x1) / 2)), (y1 + ((y2 - y1) / 2))
+
     def delete(self):
         for shape in self.shapes:
             self.canvas.delete(shape)
@@ -73,9 +91,15 @@ class DeviceShape:
 
         return iface_menu
 
+    def raise_shapes(self, event):
+        for shape in self.shapes:
+            self.canvas.tag_raise(shape)
+
     def right_click(self, event):
         self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
+
+        self.raise_shapes(event)
 
         menu = tk.Menu(self.canvas, tearoff=0)
         menu.add_command(
@@ -92,17 +116,19 @@ class DeviceShape:
 
     def get_start_connect_handler(self, iface):
         def handler():
-            self.canvas.start_connect(iface)
+            self.canvas.start_connect(self, iface)
 
         return handler
 
     def get_end_connect_handler(self, iface):
         def handler():
-            self.canvas.select_connect_end(iface)
+            self.canvas.select_connect_end(self, iface)
 
         return handler
 
     def left_click(self, event):
+        self.raise_shapes(event)
+
         if (
             self.canvas.connect_start is not None
             and self.canvas.connect_start not in (self.device.ifaces)
@@ -115,6 +141,7 @@ class DeviceShape:
             )
             menu.post(event.x_root, event.y_root)
             self.canvas.menu = menu
+
         self.start_drag(event)
 
     def start_drag(self, event):
@@ -124,9 +151,6 @@ class DeviceShape:
         self.drag_start_y = event.y
         self.canvas.drag_start_x = None
         self.canvas.drag_start_y = None
-
-        for shape in self.shapes:
-            self.canvas.tag_raise(shape)
 
     def drag(self, event):
         if self.canvas.connect_start is not None:
@@ -138,6 +162,8 @@ class DeviceShape:
 
         for shape in self.shapes:
             self.canvas.move(shape, dx, dy)
+
+        self.send_updates()
 
         self.drag_start_x = event.x
         self.drag_start_y = event.y
