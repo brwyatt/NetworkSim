@@ -144,7 +144,7 @@ class DeviceShape:
         self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
 
-        self.raise_shapes(event)
+        self.raise_shapes()
 
         self.create_menu(event)
 
@@ -161,7 +161,7 @@ class DeviceShape:
         return handler
 
     def left_click(self, event):
-        self.raise_shapes(event)
+        self.raise_shapes()
 
         if (
             self.canvas.connect_start is not None
