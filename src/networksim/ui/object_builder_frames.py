@@ -266,7 +266,7 @@ class ObjectBuilderFrame(tk.Frame):
 
             # Handle cases where we get something weird back, like an int for a bool
             if not isinstance(value, var_type):
-                value = var_type(v["value"].get())
+                value = var_type(value)
             params[k] = value
             print(f" * {k}: {params[k]}")
 

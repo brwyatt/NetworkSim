@@ -4,6 +4,7 @@ from typing import Optional
 from typing import Type
 
 from networksim.hardware.device import Device
+from networksim.ui.errorwindow import ErrorWindow
 from networksim.ui.object_builder_frames import ObjectBuilderFrame
 
 
@@ -50,9 +51,16 @@ class AddWindow(tk.Toplevel):
         self.grab_set()
 
     def submit(self):
-        obj = self.fields_frame.get()
-        self.callback(obj)
-        self.close()
+        try:
+            obj = self.fields_frame.get()
+        except Exception as e:
+            ErrorWindow(
+                master=self,
+                text=f"Data error, invalid field input: {e}",
+            )
+        else:
+            self.callback(obj)
+            self.close()
 
     def close(self):
         # re-activate parent window
