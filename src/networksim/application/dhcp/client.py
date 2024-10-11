@@ -1,4 +1,5 @@
 from typing import List
+from typing import Optional
 
 import networksim.application.dhcp.payload as payload
 from networksim.application import Application
@@ -24,7 +25,7 @@ class DHCPClient(Application):
         self,
         device: Device,
         *args,
-        ifaces: List[Interface] = None,
+        ifaces: Optional[List[Interface]] = None,
         **kwargs,
     ):
         super().__init__(device, *args, **kwargs)
