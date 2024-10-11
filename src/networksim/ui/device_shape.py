@@ -113,6 +113,36 @@ class DeviceShape:
 
         return iface_menu
 
+    def create_ip_binds_menu(self, master):
+        binds_menu = tk.Menu(master, tearoff=False)
+
+        iface_num = -1
+        for iface in self.device.ifaces:
+            iface_num += 1
+            if not iface.connected:
+                continue
+            iface_menu = tk.Menu(binds_menu, tearoff=False)
+            for bind in self.device.ip.bound_ips.get_binds(iface=iface):
+                bind_menu = tk.Menu(iface_menu, tearoff=False)
+                bind_menu.add_command(
+                    label="DELETE",
+                    command=lambda: print("DELETE"),
+                )
+                iface_menu.add_cascade(
+                    label=f"{bind.addr} - {bind.network}",
+                    menu=bind_menu,
+                )
+            iface_menu.add_command(
+                label="ADD",
+                command=lambda: print("ADD"),
+            )
+            binds_menu.add_cascade(
+                label=f"{iface_num} - ({str(iface.hwid)})",
+                menu=iface_menu,
+            )
+
+        return binds_menu
+
     def raise_shapes(self):
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
@@ -134,6 +164,10 @@ class DeviceShape:
             self.get_add_application_handler,
         )
         menu.add_cascade(label="Add Application", menu=add_app_menu)
+
+        if hasattr(self.device, "ip"):
+            ip_binds_menu = self.create_ip_binds_menu(menu)
+            menu.add_cascade(label="IP Binds", menu=ip_binds_menu)
 
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
