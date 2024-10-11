@@ -1,9 +1,13 @@
 import inspect
 import tkinter as tk
-from typing import List, Optional, get_args
+from typing import get_args
 from typing import get_origin
+from typing import List
+from typing import Optional
 from typing import Type
 from typing import Union
+
+from networksim.ipaddr import IPAddr
 
 
 class ListBuilderFrame(tk.Frame):
@@ -100,6 +104,12 @@ class ListBuilderFrame(tk.Frame):
                 field["field"].config(state=state)
 
 
+class IPAddrVar(tk.StringVar):
+    def get(self, *args, **kwargs):
+        val = super().get(*args, **kwargs)
+        return IPAddr.from_str(val)
+
+
 def get_var_fields(master, param_type, sticky="EW"):
     if param_type in (str, bytes):
         var = tk.StringVar()
@@ -122,6 +132,9 @@ def get_var_fields(master, param_type, sticky="EW"):
             master,
             variable=var,
         )
+    elif param_type is IPAddr:
+        var = IPAddrVar()
+        field = tk.Entry(master, textvariable=var)
     elif get_origin(param_type) is list:
         var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
     else:
@@ -131,7 +144,13 @@ def get_var_fields(master, param_type, sticky="EW"):
 
 
 class ObjectBuilderFrame(tk.Frame):
-    def __init__(self, master=None, *args, cls: Type, ignore_list: Optional[List[str]] = None):
+    def __init__(
+        self,
+        master=None,
+        *args,
+        cls: Type,
+        ignore_list: Optional[List[str]] = None,
+    ):
         super().__init__(master=master)
         self.cls = cls
         self.ignore_list = ignore_list if ignore_list is not None else []
@@ -184,6 +203,9 @@ class ObjectBuilderFrame(tk.Frame):
             self.fields[name]["widgets"]["field"] = field
             self.fields[name]["value"] = var
 
+            print(
+                f"FIELD: {name} DEFAULT: {self.fields[name].get('default', 'NO DEFAULT')}",
+            )
             if self.fields[name].get("default") is not None:
                 if param_type is bool:
                     var.set(1 if self.fields[name]["default"] else 0)

@@ -1,12 +1,23 @@
 import tkinter as tk
+from dataclasses import dataclass
 from typing import Optional
 from typing import TYPE_CHECKING
 
 import pkg_resources
 from networksim.hardware.device import Device
+from networksim.hardware.interface import Interface
+from networksim.ipaddr import IPAddr
+from networksim.ipaddr import IPNetwork
+from networksim.ui.addwindow import AddWindow
 
 if TYPE_CHECKING:
     from networksim.ui.viewpane import ViewPane
+
+
+@dataclass
+class ip_bind:
+    addr: IPAddr
+    network: IPNetwork
 
 
 class DeviceShape:
@@ -113,6 +124,32 @@ class DeviceShape:
 
         return iface_menu
 
+    def get_add_bind_handler(self, iface: Interface):
+        def handler():
+            AddWindow(
+                master=self.canvas.winfo_toplevel(),
+                cls=ip_bind,
+                callback=lambda bind: self.device.ip.bind(
+                    addr=bind.addr,
+                    network=bind.network,
+                    iface=iface,
+                ),
+            )
+
+        return handler
+
+    def get_delete_bind_handler(self, addr: IPAddr, iface: Interface):
+        def handler():
+            self.device.ip.unbind(addr=addr, iface=iface)
+
+        return handler
+
+    def get_garp_handler(self, addr: IPAddr, iface: Interface):
+        def handler():
+            self.device.ip.send_garp(addr=addr, iface=iface)
+
+        return handler
+
     def create_ip_binds_menu(self, master):
         binds_menu = tk.Menu(master, tearoff=False)
 
@@ -125,16 +162,23 @@ class DeviceShape:
             for bind in self.device.ip.bound_ips.get_binds(iface=iface):
                 bind_menu = tk.Menu(iface_menu, tearoff=False)
                 bind_menu.add_command(
-                    label="DELETE",
-                    command=lambda: print("DELETE"),
+                    label="Remove Bind",
+                    command=self.get_delete_bind_handler(
+                        addr=bind.addr,
+                        iface=iface,
+                    ),
+                )
+                bind_menu.add_command(
+                    label="Send Gratuitous ARP",
+                    command=self.get_garp_handler(addr=bind.addr, iface=iface),
                 )
                 iface_menu.add_cascade(
-                    label=f"{bind.addr} - {bind.network}",
+                    label=f"{bind.addr}/{bind.network.match_bits}",
                     menu=bind_menu,
                 )
             iface_menu.add_command(
-                label="ADD",
-                command=lambda: print("ADD"),
+                label="Add Bind",
+                command=self.get_add_bind_handler(iface),
             )
             binds_menu.add_cascade(
                 label=f"{iface_num} - ({str(iface.hwid)})",
