@@ -1,5 +1,7 @@
+import inspect
 import tkinter as tk
 from dataclasses import dataclass
+from dataclasses import make_dataclass
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -187,6 +189,44 @@ class DeviceShape:
 
         return binds_menu
 
+    def get_start_application_handler(self, name, application):
+        sig = inspect.signature(application)
+        fields = []
+        for field in sig.parameters.values():
+            if field.name in ["device", "args", "kwargs"]:
+                continue
+            if field.default == inspect.Parameter.empty:
+                fields.append((field.name, field.annotation))
+            else:
+                fields.append((field.name, field.annotation, field.default))
+        datacls = make_dataclass(name, fields)
+
+        def callback(data):
+            self.device.start_application(name, **data.__dict__)
+
+        def handler():
+            if len(fields) == 0:
+                callback(datacls())
+            else:
+                AddWindow(
+                    master=self.canvas.winfo_toplevel(),
+                    cls=datacls,
+                    callback=callback,
+                )
+
+        return handler
+
+    def create_start_application_menu(self, master):
+        app_menu = tk.Menu(master, tearoff=False)
+
+        for name, application in self.device.applications.items():
+            app_menu.add_command(
+                label=name,
+                command=self.get_start_application_handler(name, application),
+            )
+
+        return app_menu
+
     def raise_shapes(self):
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
@@ -212,6 +252,10 @@ class DeviceShape:
         if hasattr(self.device, "ip"):
             ip_binds_menu = self.create_ip_binds_menu(menu)
             menu.add_cascade(label="IP Binds", menu=ip_binds_menu)
+
+        if len(self.device.applications) > 0:
+            start_app_menu = self.create_start_application_menu(menu)
+            menu.add_cascade(label="Start Application", menu=start_app_menu)
 
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
