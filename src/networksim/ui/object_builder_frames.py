@@ -7,6 +7,7 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
 
 
@@ -110,6 +111,12 @@ class IPAddrVar(tk.StringVar):
         return IPAddr.from_str(val)
 
 
+class HWIDVar(tk.StringVar):
+    def get(self, *args, **kwargs):
+        val = super().get(*args, **kwargs)
+        return HWID.from_str(val)
+
+
 def get_var_fields(master, param_type, sticky="EW"):
     if param_type in (str, bytes):
         var = tk.StringVar()
@@ -134,6 +141,9 @@ def get_var_fields(master, param_type, sticky="EW"):
         )
     elif param_type is IPAddr:
         var = IPAddrVar()
+        field = tk.Entry(master, textvariable=var)
+    elif param_type is HWID:
+        var = HWIDVar()
         field = tk.Entry(master, textvariable=var)
     elif get_origin(param_type) is list:
         var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
