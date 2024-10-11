@@ -236,8 +236,6 @@ class ObjectBuilderFrame(tk.Frame):
                 self.fields[name]["widgets"]["toggle"] = toggle
 
             row += 1
-        # TODO: add a "port config" section to manually add ports
-        # ... need the port configuring window first, though
 
     def get_toggle_handler(self, var, label, field):
         def handler():
