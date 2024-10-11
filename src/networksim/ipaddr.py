@@ -51,7 +51,7 @@ class IPAddr:
 
 
 class IPNetwork:
-    def __init__(self, addr: IPAddr, match_bits=24):
+    def __init__(self, addr: IPAddr, match_bits: int = 24):
         if match_bits > (IPAddr.length_bytes * 8):
             raise ValueError("match_bits is greater than address length!")
         self.match_bits = match_bits
