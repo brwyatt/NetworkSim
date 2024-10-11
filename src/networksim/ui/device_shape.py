@@ -2,6 +2,7 @@ import tkinter as tk
 from typing import Optional
 from typing import TYPE_CHECKING
 
+import pkg_resources
 from networksim.hardware.device import Device
 
 if TYPE_CHECKING:
@@ -77,6 +78,27 @@ class DeviceShape:
         for shape in self.shapes:
             self.canvas.delete(shape)
 
+    def get_add_application_handler(self, entry_point):
+        def handler():
+            self.device.add_application(entry_point.load(), entry_point.name)
+
+        return handler
+
+    def create_add_application_menu(self, master, handler_generator):
+        app_menu = tk.Menu(master, tearoff=False)
+
+        for entry_point in pkg_resources.iter_entry_points(
+            "networksim_applications",
+        ):
+            if entry_point.name in self.device.applications:
+                continue
+            app_menu.add_command(
+                label=entry_point.name,
+                command=handler_generator(entry_point),
+            )
+
+        return app_menu
+
     def create_iface_menu(self, master, handler_generator):
         iface_menu = tk.Menu(master, tearoff=False)
         iface_num = -1
@@ -106,6 +128,12 @@ class DeviceShape:
             self.get_start_connect_handler,
         )
         menu.add_cascade(label="Connect", menu=iface_menu)
+
+        add_app_menu = self.create_add_application_menu(
+            menu,
+            self.get_add_application_handler,
+        )
+        menu.add_cascade(label="Add Application", menu=add_app_menu)
 
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu

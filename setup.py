@@ -25,6 +25,11 @@ setup(
             "Infrastructrue.Router = networksim.hardware.device.infrastructure.router:Router",
             "Infrastructrue.Switch = networksim.hardware.device.infrastructure.switch:Switch",
         ],
+        "networksim_applications": [
+            "Ping = networksim.application.ping:Ping",
+            "DHCP_Server = networksim.application.dhcp.server:DHCPServer",
+            "DHCP_Client = networksim.application.dhcp.client:DHCPClient",
+        ],
     },
     install_requires=["setuptools>=50.0.0,<76.0.0"],
     tests_require=[],
