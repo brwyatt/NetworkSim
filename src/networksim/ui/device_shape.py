@@ -95,12 +95,7 @@ class DeviceShape:
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
 
-    def right_click(self, event):
-        self.canvas.last_event = event.serial
-        self.canvas.remove_menu(event)
-
-        self.raise_shapes(event)
-
+    def create_menu(self, event):
         menu = tk.Menu(self.canvas, tearoff=0)
         menu.add_command(
             label="Delete",
@@ -111,8 +106,19 @@ class DeviceShape:
             self.get_start_connect_handler,
         )
         menu.add_cascade(label="Connect", menu=iface_menu)
+
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
+
+        return menu
+
+    def right_click(self, event):
+        self.canvas.last_event = event.serial
+        self.canvas.remove_menu(event)
+
+        self.raise_shapes(event)
+
+        self.create_menu(event)
 
     def get_start_connect_handler(self, iface):
         def handler():

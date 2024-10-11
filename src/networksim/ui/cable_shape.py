@@ -1,3 +1,4 @@
+import tkinter as tk
 from typing import TYPE_CHECKING
 
 from networksim.hardware.cable import Cable
@@ -31,6 +32,9 @@ class CableShape:
         self.a.add_update_handler(self.update_location)
         self.b.add_update_handler(self.update_location)
 
+        canvas.tag_bind(self.line, "<ButtonPress-1>", self.left_click)
+        canvas.tag_bind(self.line, "<ButtonPress-3>", self.right_click)
+
     def update_location(self):
         self.canvas.coords(
             self.line,
@@ -42,3 +46,34 @@ class CableShape:
         self.a.del_update_handler(self.update_location)
         self.b.del_update_handler(self.update_location)
         self.canvas.delete(self.line)
+
+    def raise_shapes(self, event):
+        self.canvas.tag_raise(self.line)
+        self.a.raise_shapes(event)
+        self.b.raise_shapes(event)
+
+    def create_menu(self, event):
+        menu = tk.Menu(self.canvas, tearoff=0)
+        menu.add_command(
+            label="Delete",
+            command=lambda: self.canvas.delete_cable(self),
+        )
+
+        menu.post(event.x_root, event.y_root)
+        self.canvas.menu = menu
+
+        return menu
+
+    def left_click(self, event):
+        self.canvas.last_event = event.serial
+        self.canvas.remove_menu(event)
+
+        self.raise_shapes(event)
+
+    def right_click(self, event):
+        self.canvas.last_event = event.serial
+        self.canvas.remove_menu(event)
+
+        self.raise_shapes(event)
+
+        self.create_menu(event)
