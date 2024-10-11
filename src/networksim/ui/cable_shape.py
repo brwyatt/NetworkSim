@@ -27,13 +27,13 @@ class CableShape:
             width=5,
         )
 
-        self.canvas.tag_lower(self.line)
-
         self.a.add_update_handler(self.update_location)
         self.b.add_update_handler(self.update_location)
 
         canvas.tag_bind(self.line, "<ButtonPress-1>", self.left_click)
         canvas.tag_bind(self.line, "<ButtonPress-3>", self.right_click)
+
+        self.raise_shapes()
 
     def update_location(self):
         self.canvas.coords(
@@ -47,10 +47,10 @@ class CableShape:
         self.b.del_update_handler(self.update_location)
         self.canvas.delete(self.line)
 
-    def raise_shapes(self, event):
+    def raise_shapes(self):
         self.canvas.tag_raise(self.line)
-        self.a.raise_shapes(event)
-        self.b.raise_shapes(event)
+        self.a.raise_shapes()
+        self.b.raise_shapes()
 
     def create_menu(self, event):
         menu = tk.Menu(self.canvas, tearoff=0)

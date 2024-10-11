@@ -113,7 +113,7 @@ class DeviceShape:
 
         return iface_menu
 
-    def raise_shapes(self, event):
+    def raise_shapes(self):
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
 
