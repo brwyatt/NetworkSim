@@ -68,12 +68,12 @@ class CableShape:
         self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
 
-        self.raise_shapes(event)
+        self.raise_shapes()
 
     def right_click(self, event):
         self.canvas.last_event = event.serial
         self.canvas.remove_menu(event)
 
-        self.raise_shapes(event)
+        self.raise_shapes()
 
         self.create_menu(event)
