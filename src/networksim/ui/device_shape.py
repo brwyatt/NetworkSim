@@ -227,6 +227,41 @@ class DeviceShape:
 
         return app_menu
 
+    def get_stop_application_handler(self, id):
+        def handler():
+            self.device.stop_application(id)
+
+        return handler
+
+    def get_proc_log_handler(self, application):
+        def handler():
+            print(application.log)
+
+        return handler
+
+    def create_process_menu(self, master):
+        proc_list_menu = tk.Menu(master, tearoff=False)
+
+        for id, application in sorted(
+            self.device.process_list.items(),
+            key=lambda x: x[0],
+        ):
+            proc_menu = tk.Menu(proc_list_menu, tearoff=False)
+            proc_menu.add_command(
+                label="Stop process",
+                command=self.get_stop_application_handler(id),
+            )
+            proc_menu.add_command(
+                label="View process logs",
+                command=self.get_proc_log_handler(application),
+            )
+            proc_list_menu.add_cascade(
+                label=f"[{id}] {application.__class__.__name__}",
+                menu=proc_menu,
+            )
+
+        return proc_list_menu
+
     def raise_shapes(self):
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
@@ -256,6 +291,10 @@ class DeviceShape:
         if len(self.device.applications) > 0:
             start_app_menu = self.create_start_application_menu(menu)
             menu.add_cascade(label="Start Application", menu=start_app_menu)
+
+        if len(self.device.process_list) > 0:
+            proc_list_menu = self.create_process_menu(menu)
+            menu.add_cascade(label="Processes", menu=proc_list_menu)
 
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
