@@ -11,6 +11,7 @@ from networksim.hardware.interface import Interface
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
 from networksim.ui.addwindow import AddWindow
+from networksim.ui.logviewwindow import LogViewWindow
 
 if TYPE_CHECKING:
     from networksim.ui.viewpane import ViewPane
@@ -235,7 +236,11 @@ class DeviceShape:
 
     def get_proc_log_handler(self, application):
         def handler():
-            print(application.log)
+            LogViewWindow(
+                self.canvas.winfo_toplevel(),
+                title=f"Application logs for {application.__class__.__name__}",
+                log=application.log,
+            )
 
         return handler
 
