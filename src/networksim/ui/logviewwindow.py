@@ -47,7 +47,7 @@ class LogViewWindow(tk.Toplevel):
         self.okay = tk.Button(self, text="OK", command=self.close, pady=5)
         self.okay.grid(column=0, row=2)
 
-        self.geometry("400x300")
+        self.geometry("800x600")
         self.update_idletasks()
 
     def close(self):

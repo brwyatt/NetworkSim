@@ -496,6 +496,8 @@ class IPStack(Stack):
         src: IPAddr,
         dst: IPAddr,
         iface: Optional[Interface] = None,
+        hwsrc: Optional[HWID] = None,
+        hwdst: Optional[HWID] = None,
     ):
         if isinstance(packet, ICMPPing):
             if not self.bound_ips.get_binds(addr=dst, iface=iface):
@@ -525,7 +527,14 @@ class IPStack(Stack):
                 packet.identifier,
             )
             if callback is not None:
-                callback(packet, src=src, dst=dst, iface=iface)
+                callback(
+                    packet,
+                    src=src,
+                    dst=dst,
+                    iface=iface,
+                    hwsrc=hwsrc,
+                    hwdst=hwdst,
+                )
 
     def process_udp(
         self,
@@ -533,6 +542,8 @@ class IPStack(Stack):
         src: IPAddr,
         dst: IPAddr,
         iface: Optional[Interface] = None,
+        hwsrc: Optional[HWID] = None,
+        hwdst: Optional[HWID] = None,
     ):
         callback = self.get_protocol_callback(
             UDP,
@@ -540,7 +551,14 @@ class IPStack(Stack):
             packet.dst_port,
         )
         if callback is not None:
-            callback(packet, src=src, dst=dst, iface=iface)
+            callback(
+                packet,
+                src=src,
+                dst=dst,
+                iface=iface,
+                hwsrc=hwsrc,
+                hwdst=hwdst,
+            )
 
     def process_packet(
         self,
@@ -595,6 +613,8 @@ class IPStack(Stack):
                 src=packet.src,
                 dst=packet.dst,
                 iface=iface,
+                hwsrc=src,
+                hwdst=dst,
             )
 
         if isinstance(packet.payload, UDP):
@@ -603,4 +623,6 @@ class IPStack(Stack):
                 src=packet.src,
                 dst=packet.dst,
                 iface=iface,
+                hwsrc=src,
+                hwdst=dst,
             )

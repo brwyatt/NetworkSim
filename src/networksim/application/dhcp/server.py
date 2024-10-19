@@ -156,6 +156,8 @@ class DHCPServer(Application):
         )
 
     def step(self):
+        super().step()
+
         for x in list(self.leases):
             if x.expires == 0:
                 self.checkin(x.hwid, x.addr)
@@ -168,10 +170,12 @@ class DHCPServer(Application):
         src: IPAddr,
         dst: IPAddr,
         iface: Interface,
+        hwsrc: Optional[HWID] = None,
+        hwdst: Optional[HWID] = None,
     ):
         if not isinstance(packet.payload, payload.DHCPPayload):
             self.log.append(
-                f"Received invalid packet payload {type(packet.payload)}",
+                f"{self.step_count} ({hwsrc}): Received invalid packet payload {type(packet.payload)}",
             )
             return
 
@@ -183,7 +187,8 @@ class DHCPServer(Application):
         except IndexError:
             # Unexpected, until we implement DHCP proxying
             self.log.append(
-                "Received DHCP packet on interface not bound to the network we offer DHCP for",
+                f"{self.step_count} ({hwsrc}): Received DHCP packet on interface not "
+                "bound to the network we offer DHCP for",
             )
             return
 
@@ -200,11 +205,15 @@ class DHCPServer(Application):
             options[6] = self.nameservers
 
         if isinstance(packet.payload, payload.DHCPDiscover):
-            self.log.append("Received DHCPDiscover")
+            self.log.append(
+                f"{self.step_count} ({hwsrc}): Received DHCPDiscover",
+            )
             req_ip = packet.payload.options.get(50, None)
             lease = self.checkout(packet.payload.client_hwid, req_ip)
 
-            self.log.append("Sending DHCPOffer")
+            self.log.append(
+                f"{self.step_count} ({hwsrc}): Sending DHCPOffer ({lease.addr})",
+            )
             iface.send(
                 EthernetPacket(
                     dst=lease.hwid,
@@ -228,12 +237,14 @@ class DHCPServer(Application):
             return
 
         if isinstance(packet.payload, payload.DHCPRequest):
-            self.log.append("Received DHCPRequest")
+            self.log.append(
+                f"{self.step_count} ({hwsrc}): Received DHCPRequest for {packet.payload.options.get(50, None)}",
+            )
             server = packet.payload.options.get(54, packet.payload.server_ip)
             if server != bind.addr:
                 self.log.append(
-                    f"Client {packet.payload.client_hwid} accepted offer from other "
-                    f"DHCP server {server}, instead of ours!",
+                    f"{self.step_count} ({hwsrc}): Client {packet.payload.client_hwid} "
+                    f"accepted offer from other DHCP server {server}, instead of ours!",
                 )
                 lease = self.check_lease(hwid=packet.payload.client_hwid)
                 if lease is not None:
@@ -248,13 +259,15 @@ class DHCPServer(Application):
                 # how did we get here!? - Probably an explicit request for an address
                 # leased to someone else...
                 self.log.append(
-                    "Unable to accept request for "
+                    f"{self.step_count} ({hwsrc}): Unable to accept request for "
                     f"{packet.payload.options.get(50, None)} "
                     f"from {packet.payload.client_hwid}",
                 )
                 self.checkin(hwid=lease.hwid, addr=lease.addr)
                 # send a NACK
-                self.log.append("Sending DHCPNack")
+                self.log.append(
+                    f"{self.step_count} ({hwsrc}): Sending DHCPNack ({lease.addr})",
+                )
                 iface.send(
                     EthernetPacket(
                         dst=lease.hwid,
@@ -274,7 +287,9 @@ class DHCPServer(Application):
                     ),
                 )
 
-            self.log.append("Sending DHCPAck")
+            self.log.append(
+                f"{self.step_count} ({hwsrc}): Sending DHCPAck ({lease.addr})",
+            )
             iface.send(
                 EthernetPacket(
                     dst=lease.hwid,
