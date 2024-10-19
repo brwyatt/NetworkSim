@@ -7,6 +7,7 @@ from networksim.application.ping import Ping
 from networksim.hardware.cable import Cable
 from networksim.hardware.device.infrastructure.switch import Switch
 from networksim.hardware.device.ip.ipdevice import IPDevice
+from networksim.hardware.interface import Interface
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
 from networksim.simulation import Simulation
@@ -14,20 +15,33 @@ from networksim.simulation import Simulation
 
 sim = Simulation()
 
+
+def create_ifaces(count=1, max_bandwidth=1):
+    ifaces = []
+    for i in range(0, count):
+        ifaces.append(Interface(max_bandwidth=max_bandwidth))
+    return ifaces
+
+
 # CORE Switch
-cor_sw = Switch(name="cor_sw", iface_count=4, forward_capacity=1600)
-for iface in cor_sw.ifaces:
-    iface.max_bandwidth = 400
+cor_sw = Switch(
+    name="cor_sw",
+    ifaces=create_ifaces(count=4, max_bandwidth=400),
+    process_rate=1600,
+)
 sim.add_device(cor_sw)
 
 
 # Aggregation Switches
 def create_agg(name):
-    sw = Switch(name=name, iface_count=10, forward_capacity=1500)
-    for iface in sw.ifaces[:-2]:
-        iface.max_bandwidth = 100
-    for iface in sw.ifaces[-2:]:
-        iface.max_bandwidth = 400
+    sw = Switch(
+        name=name,
+        ifaces=(
+            create_ifaces(count=8, max_bandwidth=100)
+            + create_ifaces(count=2, max_bandwidth=400)
+        ),
+        process_rate=1500,
+    )
     return sw
 
 
@@ -42,11 +56,14 @@ sim.add_cable(Cable(agg_sw2[-1], cor_sw[1], length=5, max_bandwidth=400))
 
 # Access Switches
 def create_acc(name):
-    sw = Switch(name=name, iface_count=26, forward_capacity=400)
-    for iface in sw.ifaces[:-2]:
-        iface.max_bandwidth = 10
-    for iface in sw.ifaces[-2:]:
-        iface.max_bandwidth = 100
+    sw = Switch(
+        name=name,
+        ifaces=(
+            create_ifaces(count=24, max_bandwidth=10)
+            + create_ifaces(count=2, max_bandwidth=100)
+        ),
+        process_rate=400,
+    )
     return sw
 
 
@@ -70,8 +87,10 @@ sim.add_cable(Cable(acc_sw2_2[-1], agg_sw2[1], length=1, max_bandwidth=100))
 dhcp_server_ip = IPAddr.from_str("172.16.20.5")
 dhcp_network = IPNetwork(dhcp_server_ip, 24)
 
-dhcp_server = IPDevice(name="dhcp_server")
-dhcp_server.ifaces[0].max_bandwidth = 20
+dhcp_server = IPDevice(
+    name="dhcp_server",
+    ifaces=create_ifaces(count=1, max_bandwidth=20),
+)
 sim.add_device(dhcp_server)
 sim.add_cable(
     Cable(
@@ -107,8 +126,7 @@ def add_device():
         )
         if not x.connected
     ]
-    dev = IPDevice()
-    dev.ifaces[0].max_bandwidth = 10
+    dev = IPDevice(ifaces=create_ifaces(count=1, max_bandwidth=10))
     sim.add_device(dev)
     sim.add_cable(
         Cable(
