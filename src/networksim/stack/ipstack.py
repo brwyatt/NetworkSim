@@ -222,8 +222,8 @@ class IPStack(Stack):
 
     def unbind(
         self,
-        addr: Optional[IPAddr],
-        iface: Optional[Interface],
+        addr: Optional[IPAddr] = None,
+        iface: Optional[Interface] = None,
     ):
         self.bound_ips.del_binds(addr=addr, iface=iface)
         self.routes.del_routes(src=addr, iface=iface)
