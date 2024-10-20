@@ -132,6 +132,10 @@ class ViewPane(tk.Canvas):
 
         return handler
 
+    def step(self):
+        for cable in self.cables:
+            cable.draw_packets()
+
     def delete_cable(self, cable: Cable):
         try:
             self.sim.delete_cable(cable.cable)
