@@ -9,6 +9,8 @@ from typing import Union
 
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
+from networksim.packet import Packet
+from networksim.utils import get_all_subclasses
 
 
 class ListBuilderFrame(tk.Frame):
@@ -147,6 +149,8 @@ def get_var_fields(master, param_type, sticky="EW"):
         field = tk.Entry(master, textvariable=var)
     elif get_origin(param_type) is list:
         var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
+    elif issubclass(param_type, (Packet,)):
+        var = field = SubclassBuilderFrame(master, parent_cls=param_type)
     else:
         var = field = ObjectBuilderFrame(master, cls=param_type)
 
@@ -283,3 +287,53 @@ class ObjectBuilderFrame(tk.Frame):
                             else "disabled"
                         ),
                     )
+
+
+class SubclassBuilderFrame(tk.Frame):
+    def __init__(
+        self,
+        master=None,
+        *args,
+        parent_cls: Type,
+    ):
+        super().__init__(master=master)
+        self.parent_class = parent_cls
+        self.child_classes = get_all_subclasses(parent_cls)
+
+        self.build_fields()
+
+    def build_fields(self):
+        self.columnconfigure(1, weight=1)
+
+        self.type_label = tk.Label(self, text="Type: ")
+        self.type_label.grid(row=0, column=0, sticky="NE")
+
+        self.selected_type = tk.StringVar(self, value="")
+        self.type_selector = tk.OptionMenu(
+            self,
+            self.selected_type,
+            self.parent_class.__name__,
+            *[x.__name__ for x in self.child_classes],
+        )
+        self.selected_type.trace_add("write", self.type_changed)
+        self.type_selector.grid(row=0, column=1, sticky="NW")
+
+        self.object_label = tk.Label(self, text="Packet: ")
+        self.object_label.grid(row=1, column=0, sticky="NE")
+
+        self.object_frame = tk.Label(self, text="Select Packet Type")
+        self.object_frame.grid(row=1, column=1, sticky="NW")
+
+    def type_changed(self, *args):
+        print(f"CHANGED! -- {self.selected_type.get()}")
+
+    def config(self, *args, state=None, **kwargs):
+        super().config(*args, **kwargs)
+        if state is not None:
+            for widget in [
+                self.type_label,
+                self.type_selector,
+                self.object_label,
+                self.object_frame,
+            ]:
+                widget.config(state=state)

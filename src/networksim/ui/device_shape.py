@@ -10,6 +10,7 @@ from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
+from networksim.packet import Packet
 from networksim.ui.addwindow import AddWindow
 from networksim.ui.logviewwindow import LogViewWindow
 
@@ -301,10 +302,23 @@ class DeviceShape:
             proc_list_menu = self.create_process_menu(menu)
             menu.add_cascade(label="Processes", menu=proc_list_menu)
 
+        menu.add_command(
+            label="Send Packet",
+            command=self.create_send_packet,
+        )
+
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
 
         return menu
+
+    def create_send_packet(self):
+        datacls = make_dataclass("datacls", fields=[("Packet", Packet)])
+        AddWindow(
+            master=self.canvas.winfo_toplevel(),
+            cls=datacls,
+            callback=lambda x: print(f"DATA: {x}"),
+        )
 
     def right_click(self, event):
         self.canvas.last_event = event.serial
