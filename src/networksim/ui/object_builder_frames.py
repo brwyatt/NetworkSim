@@ -1,5 +1,7 @@
 import inspect
 import tkinter as tk
+from enum import Enum
+from enum import EnumType
 from typing import get_args
 from typing import get_origin
 from typing import List
@@ -157,10 +159,35 @@ def get_var_fields(master, param_type, sticky="EW"):
         )
     elif inspect.isclass(param_type) and issubclass(param_type, (Packet,)):
         var = field = SubclassBuilderFrame(master, base_class=param_type)
+    elif isinstance(param_type, EnumType):
+        var = field = EnumSelect(master, param_type)
     else:
         var = field = ObjectBuilderFrame(master, cls=param_type)
 
     return var, field, sticky
+
+
+class EnumSelect(tk.OptionMenu):
+    def __init__(self, master, enum: EnumType):
+        self.enum = enum
+        self.selected = tk.StringVar(master, value="")
+        self.selected.trace_add("write", self.changed)
+        super().__init__(master, self.selected, *[x.name for x in list(enum)])
+
+    def changed(self, *args):
+        self.update_size()
+
+    def update_size(self):
+        toplevel = self.winfo_toplevel()
+        toplevel.update_idletasks()
+        toplevel.update()
+        reqwidth = toplevel.winfo_reqwidth()
+        reqheight = toplevel.winfo_reqheight()
+        self.winfo_toplevel().geometry(f"{reqwidth}x{reqheight}")
+
+    def get(self):
+        if self.selected.get():
+            return getattr(self.enum, self.selected.get()).value
 
 
 class ObjectBuilderFrame(tk.Frame):
