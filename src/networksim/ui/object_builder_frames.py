@@ -4,6 +4,7 @@ from typing import get_args
 from typing import get_origin
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -149,8 +150,13 @@ def get_var_fields(master, param_type, sticky="EW"):
         field = tk.Entry(master, textvariable=var)
     elif get_origin(param_type) is list:
         var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
-    elif issubclass(param_type, (Packet,)):
-        var = field = SubclassBuilderFrame(master, parent_cls=param_type)
+    elif get_origin(param_type) is Union:
+        var = field = SelectObjectBuilderFrame(
+            master,
+            classes=get_args(param_type),
+        )
+    elif inspect.isclass(param_type) and issubclass(param_type, (Packet,)):
+        var = field = SubclassBuilderFrame(master, base_class=param_type)
     else:
         var = field = ObjectBuilderFrame(master, cls=param_type)
 
@@ -252,6 +258,11 @@ class ObjectBuilderFrame(tk.Frame):
 
         return handler
 
+    def set(self, val):
+        print(
+            f"WARNING: `set()` was called on Object Builder for {self.cls.__name__} (ignoring!)",
+        )
+
     def get(self):
         params = {}
         print(f"Creating {self.cls.__name__} with parameters:")
@@ -289,16 +300,17 @@ class ObjectBuilderFrame(tk.Frame):
                     )
 
 
-class SubclassBuilderFrame(tk.Frame):
+class SelectObjectBuilderFrame(tk.Frame):
     def __init__(
         self,
         master=None,
         *args,
-        parent_cls: Type,
+        classes: Union[List[Type], List[Tuple[str, Type]]],
     ):
         super().__init__(master=master)
-        self.parent_class = parent_cls
-        self.child_classes = get_all_subclasses(parent_cls)
+        self.classes = dict(
+            [x if isinstance(x, tuple) else (x.__name__, x) for x in classes],
+        )
 
         self.build_fields()
 
@@ -312,20 +324,23 @@ class SubclassBuilderFrame(tk.Frame):
         self.type_selector = tk.OptionMenu(
             self,
             self.selected_type,
-            self.parent_class.__name__,
-            *[x.__name__ for x in self.child_classes],
+            *[x for x in self.classes.keys()],
         )
         self.selected_type.trace_add("write", self.type_changed)
         self.type_selector.grid(row=0, column=1, sticky="NW")
 
-        self.object_label = tk.Label(self, text="Packet: ")
-        self.object_label.grid(row=1, column=0, sticky="NE")
-
-        self.object_frame = tk.Label(self, text="Select Packet Type")
+        self.object_frame = tk.Label(self, text="Select Type")
         self.object_frame.grid(row=1, column=1, sticky="NW")
 
     def type_changed(self, *args):
-        print(f"CHANGED! -- {self.selected_type.get()}")
+        self.object_frame.destroy()
+        self.object_frame = ObjectBuilderFrame(
+            self,
+            cls=self.classes[self.selected_type.get()],
+        )
+        self.object_frame.grid(row=1, column=1, sticky="NW")
+
+        self.update_size()
 
     def config(self, *args, state=None, **kwargs):
         super().config(*args, **kwargs)
@@ -333,7 +348,34 @@ class SubclassBuilderFrame(tk.Frame):
             for widget in [
                 self.type_label,
                 self.type_selector,
-                self.object_label,
                 self.object_frame,
             ]:
                 widget.config(state=state)
+
+    def update_size(self):
+        toplevel = self.winfo_toplevel()
+        toplevel.update_idletasks()
+        toplevel.update()
+        reqwidth = toplevel.winfo_reqwidth()
+        reqheight = toplevel.winfo_reqheight()
+        self.winfo_toplevel().geometry(f"{reqwidth}x{reqheight}")
+
+    def get(self):
+        if isinstance(self.object_frame, tk.Label):
+            return None
+        return self.object_frame.get()
+
+
+class SubclassBuilderFrame(SelectObjectBuilderFrame):
+    def __init__(
+        self,
+        master=None,
+        *args,
+        base_class: Type,
+    ):
+        super().__init__(
+            master=master,
+            classes=get_all_subclasses(base_class, named=True),
+        )
+
+        self.build_fields()
