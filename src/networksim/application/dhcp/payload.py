@@ -4,9 +4,10 @@ from typing import Optional
 
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
+from networksim.packet.payload import Payload
 
 
-class DHCPPayload:
+class DHCPPayload(Payload):
     def __init__(
         self,
         client_ip: Optional[IPAddr] = None,

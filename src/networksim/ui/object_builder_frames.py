@@ -13,6 +13,7 @@ from typing import Union
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
+from networksim.packet.payload import Payload
 from networksim.utils import get_all_subclasses
 
 
@@ -153,12 +154,13 @@ def get_var_fields(master, param_type, sticky="EW"):
     elif get_origin(param_type) is list:
         var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
     elif get_origin(param_type) is Union:
+        args = [x for x in get_args(param_type) if x is not type(None)]
         var = field = SelectObjectBuilderFrame(
             master,
-            classes=get_args(param_type),
+            classes=args,
         )
-    elif inspect.isclass(param_type) and issubclass(param_type, (Packet,)):
-        var = field = SubclassBuilderFrame(master, base_class=param_type)
+    elif param_type in [Packet, Payload]:
+        var = field = SelectSubclassBuilderFrame(master, base_class=param_type)
     elif isinstance(param_type, EnumType):
         var = field = EnumSelect(master, param_type)
     else:
@@ -200,7 +202,10 @@ class ObjectBuilderFrame(tk.Frame):
     ):
         super().__init__(master=master)
         self.cls = cls
-        self.ignore_list = ignore_list if ignore_list is not None else []
+        self.ignore_list = set(ignore_list if ignore_list is not None else [])
+        self.ignore_list.add("args")
+        self.ignore_list.add("kwargs")
+        self.ignore_list.add("kwds")
 
         self.build_fields()
 
@@ -219,7 +224,7 @@ class ObjectBuilderFrame(tk.Frame):
             ) in get_args(param.annotation)
             param_type = (
                 param.annotation
-                if not optional
+                if not optional or len(get_args(param.annotation)) > 2
                 else get_args(param.annotation)[0]
             )
 
@@ -251,7 +256,7 @@ class ObjectBuilderFrame(tk.Frame):
             self.fields[name]["value"] = var
 
             print(
-                f"FIELD: {name} DEFAULT: {self.fields[name].get('default', 'NO DEFAULT')}",
+                f"FIELD: {name} TYPE: {param_type} DEFAULT: {self.fields[name].get('default', 'NO DEFAULT')}",
             )
             if self.fields[name].get("default") is not None:
                 if param_type is bool:
@@ -356,16 +361,17 @@ class SelectObjectBuilderFrame(tk.Frame):
         self.selected_type.trace_add("write", self.type_changed)
         self.type_selector.grid(row=0, column=1, sticky="NW")
 
+        self.object_var = tk.StringVar(self, value="")
         self.object_frame = tk.Label(self, text="Select Type")
         self.object_frame.grid(row=1, column=1, sticky="NW")
 
     def type_changed(self, *args):
         self.object_frame.destroy()
-        self.object_frame = ObjectBuilderFrame(
+        self.object_var, self.object_frame, sticky = get_var_fields(
             self,
-            cls=self.classes[self.selected_type.get()],
+            self.classes[self.selected_type.get()],
         )
-        self.object_frame.grid(row=1, column=1, sticky="NW")
+        self.object_frame.grid(row=1, column=1, sticky=sticky)
 
         self.update_size()
 
@@ -390,10 +396,10 @@ class SelectObjectBuilderFrame(tk.Frame):
     def get(self):
         if isinstance(self.object_frame, tk.Label):
             return None
-        return self.object_frame.get()
+        return self.object_var.get()
 
 
-class SubclassBuilderFrame(SelectObjectBuilderFrame):
+class SelectSubclassBuilderFrame(SelectObjectBuilderFrame):
     def __init__(
         self,
         master=None,
