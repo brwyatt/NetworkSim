@@ -412,5 +412,3 @@ class SelectSubclassBuilderFrame(SelectObjectBuilderFrame):
             master=master,
             classes=get_all_subclasses(base_class, named=True),
         )
-
-        self.build_fields()
