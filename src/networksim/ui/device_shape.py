@@ -11,6 +11,7 @@ from networksim.hardware.interface import Interface
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
 from networksim.packet import Packet
+from networksim.packet.ethernet import EthernetPacket
 from networksim.ui.addwindow import AddWindow
 from networksim.ui.logviewwindow import LogViewWindow
 
@@ -330,11 +331,10 @@ class DeviceShape:
         return menu
 
     def create_send_packet(self, iface: Interface):
-        datacls = make_dataclass("datacls", fields=[("Packet", Packet)])
         AddWindow(
             master=self.canvas.winfo_toplevel(),
-            cls=datacls,
-            callback=lambda x: print(f"DATA: {x}"),
+            cls=EthernetPacket,
+            callback=iface.send,
         )
 
     def right_click(self, event):
