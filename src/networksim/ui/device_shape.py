@@ -161,6 +161,16 @@ class DeviceShape:
 
         return handler
 
+    def copy_text(self, text: str):
+        self.canvas.clipboard_clear()
+        self.canvas.clipboard_append(text)
+
+    def get_copy_handler(self, text: str):
+        def handler():
+            self.copy_text(str(text))
+
+        return handler
+
     def create_ifaces_menu(self, master):
         ifaces_menu = tk.Menu(master, tearoff=False)
 
@@ -182,6 +192,10 @@ class DeviceShape:
                         iface=iface,
                     ):
                         bind_menu = tk.Menu(binds_menu, tearoff=False)
+                        bind_menu.add_command(
+                            label="Copy IPAddr",
+                            command=self.get_copy_handler(bind.addr),
+                        )
                         bind_menu.add_command(
                             label="Remove Bind",
                             command=self.get_delete_bind_handler(
@@ -208,6 +222,10 @@ class DeviceShape:
                         label="IP Binds",
                         menu=binds_menu,
                     )
+                iface_menu.add_command(
+                    label="Copy HWID",
+                    command=self.get_copy_handler(iface.hwid),
+                )
                 iface_menu.add_command(
                     label="Send Packet",
                     command=self.get_create_send_packet(iface),
