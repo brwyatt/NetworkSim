@@ -154,42 +154,69 @@ class DeviceShape:
 
         return handler
 
-    def create_ip_binds_menu(self, master):
-        binds_menu = tk.Menu(master, tearoff=False)
+    def get_create_send_packet(self, iface: Interface):
+        def handler():
+            return self.create_send_packet(iface)
+
+        return handler
+
+    def create_ifaces_menu(self, master):
+        ifaces_menu = tk.Menu(master, tearoff=False)
 
         iface_num = -1
         for iface in self.device.ifaces:
             iface_num += 1
+
+            iface_menu = tk.Menu(ifaces_menu, tearoff=False)
+
             if not iface.connected:
-                continue
-            iface_menu = tk.Menu(binds_menu, tearoff=False)
-            for bind in self.device.ip.bound_ips.get_binds(iface=iface):
-                bind_menu = tk.Menu(iface_menu, tearoff=False)
-                bind_menu.add_command(
-                    label="Remove Bind",
-                    command=self.get_delete_bind_handler(
-                        addr=bind.addr,
+                iface_menu.add_command(
+                    label="Connect",
+                    command=self.get_start_connect_handler(iface),
+                )
+            else:
+                binds_menu = tk.Menu(iface_menu, tearoff=False)
+                if hasattr(self.device, "ip"):
+                    for bind in self.device.ip.bound_ips.get_binds(
                         iface=iface,
-                    ),
+                    ):
+                        bind_menu = tk.Menu(binds_menu, tearoff=False)
+                        bind_menu.add_command(
+                            label="Remove Bind",
+                            command=self.get_delete_bind_handler(
+                                addr=bind.addr,
+                                iface=iface,
+                            ),
+                        )
+                        bind_menu.add_command(
+                            label="Send Gratuitous ARP",
+                            command=self.get_garp_handler(
+                                addr=bind.addr,
+                                iface=iface,
+                            ),
+                        )
+                        binds_menu.add_cascade(
+                            label=f"{bind.addr}/{bind.network.match_bits}",
+                            menu=bind_menu,
+                        )
+                    binds_menu.add_command(
+                        label="Add Bind",
+                        command=self.get_add_bind_handler(iface),
+                    )
+                    iface_menu.add_cascade(
+                        label="IP Binds",
+                        menu=binds_menu,
+                    )
+                iface_menu.add_command(
+                    label="Send Packet",
+                    command=self.get_create_send_packet(iface),
                 )
-                bind_menu.add_command(
-                    label="Send Gratuitous ARP",
-                    command=self.get_garp_handler(addr=bind.addr, iface=iface),
-                )
-                iface_menu.add_cascade(
-                    label=f"{bind.addr}/{bind.network.match_bits}",
-                    menu=bind_menu,
-                )
-            iface_menu.add_command(
-                label="Add Bind",
-                command=self.get_add_bind_handler(iface),
-            )
-            binds_menu.add_cascade(
+            ifaces_menu.add_cascade(
                 label=f"{iface_num} - ({str(iface.hwid)})",
                 menu=iface_menu,
             )
 
-        return binds_menu
+        return ifaces_menu
 
     def get_start_application_handler(self, name, application):
         sig = inspect.signature(application)
@@ -280,15 +307,8 @@ class DeviceShape:
             command=lambda: self.canvas.delete_device(self),
         )
 
-        iface_connect_menu = self.create_iface_connect_menu(
-            menu,
-            self.get_start_connect_handler,
-        )
-        menu.add_cascade(label="Connect", menu=iface_connect_menu)
-
-        if hasattr(self.device, "ip"):
-            ip_binds_menu = self.create_ip_binds_menu(menu)
-            menu.add_cascade(label="IP Binds", menu=ip_binds_menu)
+        iface_menu = self.create_ifaces_menu(menu)
+        menu.add_cascade(label="Interfaces", menu=iface_menu)
 
         add_app_menu = self.create_add_application_menu(
             menu,
@@ -304,17 +324,12 @@ class DeviceShape:
             proc_list_menu = self.create_process_menu(menu)
             menu.add_cascade(label="Processes", menu=proc_list_menu)
 
-        menu.add_command(
-            label="Send Packet",
-            command=self.create_send_packet,
-        )
-
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
 
         return menu
 
-    def create_send_packet(self):
+    def create_send_packet(self, iface: Interface):
         datacls = make_dataclass("datacls", fields=[("Packet", Packet)])
         AddWindow(
             master=self.canvas.winfo_toplevel(),
