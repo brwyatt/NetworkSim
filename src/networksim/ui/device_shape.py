@@ -114,7 +114,7 @@ class DeviceShape:
 
         return app_menu
 
-    def create_iface_menu(self, master, handler_generator):
+    def create_iface_connect_menu(self, master, handler_generator):
         iface_menu = tk.Menu(master, tearoff=False)
         iface_num = -1
         for iface in self.device.ifaces:
@@ -274,25 +274,27 @@ class DeviceShape:
 
     def create_menu(self, event):
         menu = tk.Menu(self.canvas, tearoff=0)
+
         menu.add_command(
             label="Delete",
             command=lambda: self.canvas.delete_device(self),
         )
-        iface_menu = self.create_iface_menu(
+
+        iface_connect_menu = self.create_iface_connect_menu(
             menu,
             self.get_start_connect_handler,
         )
-        menu.add_cascade(label="Connect", menu=iface_menu)
+        menu.add_cascade(label="Connect", menu=iface_connect_menu)
+
+        if hasattr(self.device, "ip"):
+            ip_binds_menu = self.create_ip_binds_menu(menu)
+            menu.add_cascade(label="IP Binds", menu=ip_binds_menu)
 
         add_app_menu = self.create_add_application_menu(
             menu,
             self.get_add_application_handler,
         )
         menu.add_cascade(label="Add Application", menu=add_app_menu)
-
-        if hasattr(self.device, "ip"):
-            ip_binds_menu = self.create_ip_binds_menu(menu)
-            menu.add_cascade(label="IP Binds", menu=ip_binds_menu)
 
         if len(self.device.applications) > 0:
             start_app_menu = self.create_start_application_menu(menu)
@@ -349,7 +351,7 @@ class DeviceShape:
         ):
             self.canvas.remove_menu(event)
             self.canvas.last_event = event.serial
-            menu = self.create_iface_menu(
+            menu = self.create_iface_connect_menu(
                 self.canvas,
                 self.get_end_connect_handler,
             )
