@@ -308,6 +308,8 @@ class ObjectBuilderFrame(tk.Frame):
             var_type = get_origin(v["type"])
             if var_type is None:
                 var_type = v["type"]
+            elif var_type is Union:
+                var_type = get_args(v["type"])
 
             # Handle cases where we get something weird back, like an int for a bool
             if not isinstance(value, var_type):
