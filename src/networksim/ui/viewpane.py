@@ -7,6 +7,7 @@ from networksim.hardware.interface import AlreadyConnectedException
 from networksim.hardware.interface import Interface
 from networksim.simulation import Simulation
 from networksim.ui.addwindow import AddWindow
+from networksim.ui.cable_draw_shape import CableDrawShape
 from networksim.ui.cable_shape import CableShape
 from networksim.ui.device_shape import DeviceShape
 from networksim.ui.errorwindow import ErrorWindow
@@ -33,6 +34,7 @@ class ViewPane(tk.Canvas):
         self.devices = []
         self.menu = None
         self.connect_start = None
+        self.draw_cable = None
         self.cables = []
 
         self.drag_start_x = None
@@ -46,16 +48,17 @@ class ViewPane(tk.Canvas):
     def remove_menu(self, event):
         if self.menu is not None:
             self.menu.destroy()
+        self.menu = None
 
     @dedupe_click
     def right_click(self, event):
         self.remove_menu(event)
-        self.connect_start = None
+        self.cancel_connect()
 
     @dedupe_click
     def left_click(self, event):
         self.remove_menu(event)
-        self.connect_start = None
+        self.cancel_connect()
         self.start_drag(event)
 
     def start_drag(self, event):
@@ -88,6 +91,12 @@ class ViewPane(tk.Canvas):
     def start_connect(self, device: DeviceShape, iface: Interface):
         print(f"Starting connect: {device.device.name} - {iface.hwid}")
         self.connect_start = (device, iface)
+        self.draw_cable = CableDrawShape(self, device)
+
+    def cancel_connect(self):
+        if self.draw_cable is not None:
+            self.draw_cable.delete()
+            self.draw_cable = None
 
     def select_connect_end(self, device: DeviceShape, iface: Interface):
         print(f"Connecting to: {device.device.name} - {iface.hwid}")
@@ -121,6 +130,8 @@ class ViewPane(tk.Canvas):
                 return
             finally:
                 self.connect_start = None
+
+            self.cancel_connect()
 
             shape = CableShape(
                 cable=cable,
