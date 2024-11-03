@@ -1,11 +1,16 @@
+import inspect
 import tkinter as tk
+from typing import Dict
 from typing import TYPE_CHECKING
+from typing import Union
 
 from networksim.hardware.cable import Cable
+from networksim.packet import Packet
 from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
 from networksim.packet.ip.icmp import ICMPPacket
 from networksim.packet.ip.udp import UDP
+from networksim.packet.payload import Payload
 from networksim.ui.device_shape import DeviceShape
 
 if TYPE_CHECKING:
@@ -59,6 +64,56 @@ class CableShape:
                     color = "yellow"
         return color
 
+    def create_packet_menu(
+        self,
+        data: Union[Packet, Payload, Dict],
+        master=None,
+    ) -> tk.Menu:
+        if master is None:
+            master = self.canvas
+
+        menu = tk.Menu(master, tearoff=0)
+
+        menu.add_separator()
+        menu.add_command(label=data.__class__.__name__)
+        menu.add_separator()
+
+        if isinstance(data, (Packet, Payload)):
+            params = inspect.signature(data.__class__).parameters
+            data_dict = data.__dict__
+        elif isinstance(data, dict):
+            params = data
+            data_dict = data
+
+        for name in params.keys():
+            if data_dict.get(name) is None:
+                menu.add_command(label=name, state="disabled")
+                continue
+
+            value = data_dict.get(name)
+            if isinstance(value, (Packet, Payload, dict)):
+                sub_menu = self.create_packet_menu(value, master=menu)
+            else:
+                sub_menu = tk.Menu(menu, tearoff=0)
+                sub_menu.add_command(label=str(value))
+            menu.add_cascade(
+                label=f"{name} [{type(value).__name__}]",
+                menu=sub_menu,
+            )
+
+        return menu
+
+    def get_packet_click_handler(self, packet: Packet):
+        def handler(event):
+            self.canvas.last_event = event.serial
+            menu = self.create_packet_menu(packet)
+            menu.post(event.x_root, event.y_root)
+            self.canvas.menu = menu
+
+            return menu
+
+        return handler
+
     def draw_packets(self):
         self.clear_packet_shapes()
 
@@ -88,6 +143,11 @@ class CableShape:
                     ab_y1 + packet_size,
                     fill=self.get_packet_color(self.cable.ab_transit[i][x]),
                 )
+                self.canvas.tag_bind(
+                    ab,
+                    "<ButtonPress-1>",
+                    self.get_packet_click_handler(self.cable.ab_transit[i][x]),
+                )
                 self.packet_shapes.append(ab)
 
             for x in range(0, self.cable.bandwidth):
@@ -107,6 +167,11 @@ class CableShape:
                     ba_x1 + packet_size,
                     ba_y1 + packet_size,
                     fill=self.get_packet_color(self.cable.ba_transit[i][x]),
+                )
+                self.canvas.tag_bind(
+                    ba,
+                    "<ButtonPress-1>",
+                    self.get_packet_click_handler(self.cable.ba_transit[i][x]),
                 )
                 self.packet_shapes.append(ba)
 
