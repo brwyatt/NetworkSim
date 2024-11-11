@@ -162,6 +162,18 @@ class DeviceShape:
 
         return handler
 
+    def get_inbound_flush_handler(self, iface: Interface):
+        def handler():
+            return iface.inbound_flush()
+
+        return handler
+
+    def get_outbound_flush_handler(self, iface: Interface):
+        def handler():
+            return iface.outbound_flush()
+
+        return handler
+
     def copy_text(self, text: str):
         self.canvas.clipboard_clear()
         self.canvas.clipboard_append(text)
@@ -233,6 +245,10 @@ class DeviceShape:
                 )
                 # Buffer menus
                 send_queue_menu = tk.Menu(iface_menu, tearoff=0)
+                send_queue_menu.add_command(
+                    label="Flush Queue",
+                    command=self.get_outbound_flush_handler(iface),
+                )
                 for packet in iface.outbound_queue:
                     send_queue_menu.add_cascade(
                         label=f"{type(packet).__name__}",
@@ -243,6 +259,10 @@ class DeviceShape:
                     menu=send_queue_menu,
                 )
                 rec_queue_menu = tk.Menu(iface_menu, tearoff=0)
+                rec_queue_menu.add_command(
+                    label="Flush Queue",
+                    command=self.get_inbound_flush_handler(iface),
+                )
                 for packet in iface.inbound_queue:
                     rec_queue_menu.add_cascade(
                         label=f"{type(packet).__name__}",
