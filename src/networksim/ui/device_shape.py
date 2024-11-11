@@ -249,9 +249,11 @@ class DeviceShape:
                     label="Flush Queue",
                     command=self.get_outbound_flush_handler(iface),
                 )
+                packet_count = -1
                 for packet in iface.outbound_queue:
+                    packet_count += 1
                     send_queue_menu.add_cascade(
-                        label=f"{type(packet).__name__}",
+                        label=f"[{packet_count}] {type(packet).__name__}",
                         menu=create_packet_menu(send_queue_menu, packet),
                     )
                 iface_menu.add_cascade(
@@ -263,9 +265,11 @@ class DeviceShape:
                     label="Flush Queue",
                     command=self.get_inbound_flush_handler(iface),
                 )
+                packet_count = -1
                 for packet in iface.inbound_queue:
+                    packet_count += 1
                     rec_queue_menu.add_cascade(
-                        label=f"{type(packet).__name__}",
+                        label=f"[{packet_count}] {type(packet).__name__}",
                         menu=create_packet_menu(rec_queue_menu, packet),
                     )
                 iface_menu.add_cascade(
