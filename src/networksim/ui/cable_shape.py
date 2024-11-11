@@ -1,6 +1,4 @@
-import inspect
 import tkinter as tk
-from typing import Dict
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -10,8 +8,8 @@ from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
 from networksim.packet.ip.icmp import ICMPPacket
 from networksim.packet.ip.udp import UDP
-from networksim.packet.payload import Payload
 from networksim.ui.device_shape import DeviceShape
+from networksim.ui.packet_menu import create_packet_menu
 
 if TYPE_CHECKING:
     from networksim.ui.viewpane import ViewPane
@@ -64,49 +62,10 @@ class CableShape:
                     color = "yellow"
         return color
 
-    def create_packet_menu(
-        self,
-        data: Union[Packet, Payload, Dict],
-        master=None,
-    ) -> tk.Menu:
-        if master is None:
-            master = self.canvas
-
-        menu = tk.Menu(master, tearoff=0)
-
-        menu.add_separator()
-        menu.add_command(label=data.__class__.__name__)
-        menu.add_separator()
-
-        if isinstance(data, (Packet, Payload)):
-            params = inspect.signature(data.__class__).parameters
-            data_dict = data.__dict__
-        elif isinstance(data, dict):
-            params = data
-            data_dict = data
-
-        for name in params.keys():
-            if data_dict.get(name) is None:
-                menu.add_command(label=name, state="disabled")
-                continue
-
-            value = data_dict.get(name)
-            if isinstance(value, (Packet, Payload, dict)):
-                sub_menu = self.create_packet_menu(value, master=menu)
-            else:
-                sub_menu = tk.Menu(menu, tearoff=0)
-                sub_menu.add_command(label=str(value))
-            menu.add_cascade(
-                label=f"{name} [{type(value).__name__}]",
-                menu=sub_menu,
-            )
-
-        return menu
-
     def get_packet_click_handler(self, packet: Packet):
         def handler(event):
             self.canvas.last_event = event.serial
-            menu = self.create_packet_menu(packet)
+            menu = create_packet_menu(self.canvas, packet)
             menu.post(event.x_root, event.y_root)
             self.canvas.menu = menu
 

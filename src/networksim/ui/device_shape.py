@@ -14,6 +14,7 @@ from networksim.packet import Packet
 from networksim.packet.ethernet import EthernetPacket
 from networksim.ui.addwindow import AddWindow
 from networksim.ui.logviewwindow import LogViewWindow
+from networksim.ui.packet_menu import create_packet_menu
 
 if TYPE_CHECKING:
     from networksim.ui.viewpane import ViewPane
@@ -229,6 +230,27 @@ class DeviceShape:
                 iface_menu.add_command(
                     label="Send Packet",
                     command=self.get_create_send_packet(iface),
+                )
+                # Buffer menus
+                send_queue_menu = tk.Menu(iface_menu, tearoff=0)
+                for packet in iface.outbound_queue:
+                    send_queue_menu.add_cascade(
+                        label=f"{type(packet).__name__}",
+                        menu=create_packet_menu(send_queue_menu, packet),
+                    )
+                iface_menu.add_cascade(
+                    label=f"Send Queue ({len(iface.outbound_queue)})",
+                    menu=send_queue_menu,
+                )
+                rec_queue_menu = tk.Menu(iface_menu, tearoff=0)
+                for packet in iface.inbound_queue:
+                    rec_queue_menu.add_cascade(
+                        label=f"{type(packet).__name__}",
+                        menu=create_packet_menu(rec_queue_menu, packet),
+                    )
+                iface_menu.add_cascade(
+                    label=f"Receive Queue ({len(iface.inbound_queue)})",
+                    menu=rec_queue_menu,
                 )
             ifaces_menu.add_cascade(
                 label=f"{iface_num} - ({str(iface.hwid)})",
