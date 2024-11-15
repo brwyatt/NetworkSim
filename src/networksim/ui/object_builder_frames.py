@@ -1,7 +1,7 @@
 import inspect
 import tkinter as tk
 from enum import Enum
-from enum import EnumType
+from enum import EnumMeta as EnumType
 from typing import get_args
 from typing import get_origin
 from typing import List
