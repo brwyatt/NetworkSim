@@ -2,6 +2,7 @@ import inspect
 import tkinter as tk
 from dataclasses import dataclass
 from dataclasses import make_dataclass
+from enum import Enum
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -364,6 +365,85 @@ class DeviceShape:
         for shape in self.shapes:
             self.canvas.tag_raise(shape)
 
+    def get_delete_route_handler(self, bind):
+        def handler():
+            self.device.ip.routes.del_routes(
+                bind.network,
+                bind.iface,
+                bind.via,
+                bind.src,
+            )
+
+        return handler
+
+    def add_route(self):
+        pass
+
+    def get_delete_ip_handler(self, bind):
+        def handler():
+            self.device.ip.bound_ips.del_binds(
+                bind.addr,
+                bind.network,
+                bind.iface,
+            )
+
+        return handler
+
+    def add_ip(self):
+        @dataclass
+        class _ip_bind:
+            addr: IPAddr
+            network: IPNetwork
+            iface: Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces})  # type: ignore
+
+        AddWindow(
+            master=self.canvas.winfo_toplevel(),
+            cls=_ip_bind,
+            callback=lambda bind: self.device.ip.bind(
+                addr=bind.addr,
+                network=bind.network,
+                iface=bind.iface,
+            ),
+        )
+
+    def create_ip_menu(self, master):
+        ifaces_menu = tk.Menu(master, tearoff=False)
+
+        ip_binds_menu = tk.Menu(ifaces_menu, tearoff=False)
+        for bind in self.device.ip.bound_ips.get_binds():
+            bind_menu = tk.Menu(ip_binds_menu, tearoff=False)
+            bind_menu.add_command(
+                label="Delete IP",
+                command=self.get_delete_ip_handler(bind),
+            )
+            ip_binds_menu.add_cascade(
+                label=f"{bind.addr}/{bind.network.match_bits}",
+                menu=bind_menu,
+            )
+        ip_binds_menu.add_command(label="Add IP", command=self.add_ip)
+        ifaces_menu.add_cascade(label="Addresses", menu=ip_binds_menu)
+
+        route_binds_menu = tk.Menu(ifaces_menu, tearoff=False)
+        for bind in self.device.ip.routes.routes:
+            bind_menu = tk.Menu(route_binds_menu, tearoff=False)
+            if bind.via:
+                bind_menu.add_command(label=f"via: {bind.via}")
+            if bind.src:
+                bind_menu.add_command(label=f"src: {bind.src}")
+            bind_menu.add_command(label=f"dev: {bind.iface.hwid}")
+            bind_menu.add_command(
+                label="Delete Route",
+                command=self.get_delete_route_handler(bind),
+            )
+            route_binds_menu.add_cascade(
+                label=f"{bind.network}",
+                menu=bind_menu,
+            )
+        route_binds_menu.add_command(label="Add Route", command=self.add_route)
+        ifaces_menu.add_cascade(label="Routes", menu=route_binds_menu)
+
+        return ifaces_menu
+
     def create_menu(self, event):
         menu = tk.Menu(self.canvas, tearoff=0)
 
@@ -374,6 +454,10 @@ class DeviceShape:
 
         iface_menu = self.create_ifaces_menu(menu)
         menu.add_cascade(label="Interfaces", menu=iface_menu)
+
+        if hasattr(self.device, "ip"):
+            ip_menu = self.create_ip_menu(menu)
+            menu.add_cascade(label="IP", menu=ip_menu)
 
         add_app_menu = self.create_add_application_menu(
             menu,
