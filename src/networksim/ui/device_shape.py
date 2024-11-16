@@ -444,6 +444,27 @@ class DeviceShape:
             ),
         )
 
+    def create_ip_send(self):
+        _ip_send = self.get_dataclass_for_function(
+            self.device.ip.send,
+            overrides={
+                "iface": Optional[self.iface_enum],
+            },
+        )
+
+        AddWindow(
+            master=self.canvas.winfo_toplevel(),
+            cls=_ip_send,
+            callback=lambda data: self.device.ip.send(
+                **{
+                    **data.__dict__,
+                    "iface": (
+                        data.iface.value if data.iface is not None else None
+                    ),
+                },
+            ),
+        )
+
     def create_ip_menu(self, master):
         ip_menu = tk.Menu(master, tearoff=False)
 
@@ -479,6 +500,10 @@ class DeviceShape:
             )
         route_binds_menu.add_command(label="Add Route", command=self.add_route)
         ip_menu.add_cascade(label="Routes", menu=route_binds_menu)
+        ip_menu.add_command(
+            label="Send IP Packet",
+            command=self.create_ip_send,
+        )
 
         return ip_menu
 

@@ -11,6 +11,7 @@ from networksim.hardware.interface import Interface
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
 from networksim.ipaddr import IPNetwork
+from networksim.packet import Packet
 from networksim.packet.arp import ARPPacket
 from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
@@ -18,6 +19,7 @@ from networksim.packet.ip.icmp import ICMPPacket
 from networksim.packet.ip.icmp import ICMPPing
 from networksim.packet.ip.icmp import ICMPPong
 from networksim.packet.ip.udp import UDP
+from networksim.packet.payload import Payload
 from networksim.stack import Stack
 
 
@@ -358,7 +360,7 @@ class IPStack(Stack):
     def send(
         self,
         dst: IPAddr,
-        payload,
+        payload: Union[Packet, Payload],
         src: Optional[IPAddr] = None,
         iface: Optional[Interface] = None,
         ttl: Optional[int] = None,
