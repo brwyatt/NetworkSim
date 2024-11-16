@@ -1,8 +1,11 @@
 import inspect
 import tkinter as tk
 from dataclasses import dataclass
+from dataclasses import fields
 from dataclasses import make_dataclass
 from enum import Enum
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -284,23 +287,42 @@ class DeviceShape:
 
         return ifaces_menu
 
-    def get_start_application_handler(self, name, application):
-        sig = inspect.signature(application)
+    def get_dataclass_for_function(
+        self,
+        func: callable,
+        name: Optional[str] = None,
+        ignore: Optional[List[str]] = None,
+        overrides: Optional[Dict[str, type]] = None,
+    ):
+        name = name if name is not None else f"{func.__name__}_data"
+        overrides = overrides if overrides is not None else {}
+        ignore = ["args", "kwargs"] + (ignore if ignore is not None else [])
+        sig = inspect.signature(func)
         fields = []
         for field in sig.parameters.values():
-            if field.name in ["device", "args", "kwargs"]:
+            if field.name in ignore:
+                continue
+            if field.name in overrides:
+                fields.append((field.name, overrides[field.name]))
                 continue
             if field.default == inspect.Parameter.empty:
                 fields.append((field.name, field.annotation))
             else:
                 fields.append((field.name, field.annotation, field.default))
-        datacls = make_dataclass(name, fields)
+        return make_dataclass(name, fields)
+
+    def get_start_application_handler(self, name, application):
+        datacls = self.get_dataclass_for_function(
+            application,
+            name=name,
+            ignore=["device"],
+        )
 
         def callback(data):
             self.device.start_application(name, **data.__dict__)
 
         def handler():
-            if len(fields) == 0:
+            if len(fields(datacls)) == 0:
                 callback(datacls())
             else:
                 AddWindow(
@@ -377,12 +399,12 @@ class DeviceShape:
         return handler
 
     def add_route(self):
-        @dataclass
-        class _route_bind:
-            network: IPNetwork
-            iface: Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces})  # type: ignore
-            via: Optional[IPAddr] = None
-            src: Optional[IPAddr] = None
+        _route_bind = self.get_dataclass_for_function(
+            self.device.ip.routes.add_route,
+            overrides={
+                "iface": Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces}),  # type: ignore
+            },
+        )
 
         AddWindow(
             master=self.canvas.winfo_toplevel(),
@@ -406,11 +428,12 @@ class DeviceShape:
         return handler
 
     def add_ip(self):
-        @dataclass
-        class _ip_bind:
-            addr: IPAddr
-            network: IPNetwork
-            iface: Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces})  # type: ignore
+        _ip_bind = self.get_dataclass_for_function(
+            self.device.ip.bind,
+            overrides={
+                "iface": Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces}),  # type: ignore
+            },
+        )
 
         AddWindow(
             master=self.canvas.winfo_toplevel(),
