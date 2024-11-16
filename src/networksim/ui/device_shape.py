@@ -302,13 +302,13 @@ class DeviceShape:
         for field in sig.parameters.values():
             if field.name in ignore:
                 continue
+            annotation = field.annotation
             if field.name in overrides:
-                fields.append((field.name, overrides[field.name]))
-                continue
+                annotation = overrides[field.name]
             if field.default == inspect.Parameter.empty:
-                fields.append((field.name, field.annotation))
+                fields.append((field.name, annotation))
             else:
-                fields.append((field.name, field.annotation, field.default))
+                fields.append((field.name, annotation, field.default))
         return make_dataclass(name, fields)
 
     def get_start_application_handler(self, name, application):
