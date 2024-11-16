@@ -1,4 +1,5 @@
 import tkinter as tk
+import traceback
 from typing import List
 from typing import Optional
 from typing import Type
@@ -54,6 +55,7 @@ class AddWindow(tk.Toplevel):
         try:
             obj = self.fields_frame.get()
         except Exception as e:
+            traceback.print_exc()
             ErrorWindow(
                 master=self,
                 text=f"Data error, invalid field input: {e}",
