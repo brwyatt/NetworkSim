@@ -472,8 +472,16 @@ class DeviceShape:
         for bind in self.device.ip.bound_ips.get_binds():
             bind_menu = tk.Menu(ip_binds_menu, tearoff=False)
             bind_menu.add_command(
+                label="Copy IPAddr",
+                command=self.get_copy_handler(bind.addr),
+            )
+            bind_menu.add_command(
                 label="Delete IP",
                 command=self.get_delete_ip_handler(bind),
+            )
+            bind_menu.add_command(
+                label="Send Gratuitous ARP",
+                command=self.get_garp_handler(bind.addr, bind.iface),
             )
             ip_binds_menu.add_cascade(
                 label=f"{bind.addr}/{bind.network.match_bits}",
