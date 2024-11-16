@@ -377,7 +377,23 @@ class DeviceShape:
         return handler
 
     def add_route(self):
-        pass
+        @dataclass
+        class _route_bind:
+            network: IPNetwork
+            iface: Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces})  # type: ignore
+            via: Optional[IPAddr] = None
+            src: Optional[IPAddr] = None
+
+        AddWindow(
+            master=self.canvas.winfo_toplevel(),
+            cls=_route_bind,
+            callback=lambda bind: self.device.ip.routes.add_route(
+                network=bind.network,
+                iface=bind.iface.value,
+                via=bind.via,
+                src=bind.src,
+            ),
+        )
 
     def get_delete_ip_handler(self, bind):
         def handler():
@@ -402,7 +418,7 @@ class DeviceShape:
             callback=lambda bind: self.device.ip.bind(
                 addr=bind.addr,
                 network=bind.network,
-                iface=bind.iface,
+                iface=bind.iface.value,
             ),
         )
 
