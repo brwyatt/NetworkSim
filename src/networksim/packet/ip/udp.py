@@ -15,3 +15,6 @@ class UDP(Packet):
         self.src_port = src_port
         self.dst_port = dst_port
         self.payload = payload
+
+    def __str__(self):
+        return f"{self.src_port}>{self.dst_port} => {self.payload}"
