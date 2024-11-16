@@ -446,9 +446,9 @@ class DeviceShape:
         )
 
     def create_ip_menu(self, master):
-        ifaces_menu = tk.Menu(master, tearoff=False)
+        ip_menu = tk.Menu(master, tearoff=False)
 
-        ip_binds_menu = tk.Menu(ifaces_menu, tearoff=False)
+        ip_binds_menu = tk.Menu(ip_menu, tearoff=False)
         for bind in self.device.ip.bound_ips.get_binds():
             bind_menu = tk.Menu(ip_binds_menu, tearoff=False)
             bind_menu.add_command(
@@ -460,9 +460,9 @@ class DeviceShape:
                 menu=bind_menu,
             )
         ip_binds_menu.add_command(label="Add IP", command=self.add_ip)
-        ifaces_menu.add_cascade(label="Addresses", menu=ip_binds_menu)
+        ip_menu.add_cascade(label="Addresses", menu=ip_binds_menu)
 
-        route_binds_menu = tk.Menu(ifaces_menu, tearoff=False)
+        route_binds_menu = tk.Menu(ip_menu, tearoff=False)
         for bind in self.device.ip.routes.routes:
             bind_menu = tk.Menu(route_binds_menu, tearoff=False)
             if bind.via:
@@ -479,9 +479,9 @@ class DeviceShape:
                 menu=bind_menu,
             )
         route_binds_menu.add_command(label="Add Route", command=self.add_route)
-        ifaces_menu.add_cascade(label="Routes", menu=route_binds_menu)
+        ip_menu.add_cascade(label="Routes", menu=route_binds_menu)
 
-        return ifaces_menu
+        return ip_menu
 
     def create_menu(self, event):
         menu = tk.Menu(self.canvas, tearoff=0)
