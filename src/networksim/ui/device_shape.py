@@ -410,10 +410,7 @@ class DeviceShape:
             master=self.canvas.winfo_toplevel(),
             cls=_route_bind,
             callback=lambda bind: self.device.ip.routes.add_route(
-                network=bind.network,
-                iface=bind.iface.value,
-                via=bind.via,
-                src=bind.src,
+                **{**bind.__dict__, "iface": bind.iface.value},
             ),
         )
 
@@ -439,9 +436,7 @@ class DeviceShape:
             master=self.canvas.winfo_toplevel(),
             cls=_ip_bind,
             callback=lambda bind: self.device.ip.bind(
-                addr=bind.addr,
-                network=bind.network,
-                iface=bind.iface.value,
+                **{**bind.__dict__, "iface": bind.iface.value},
             ),
         )
 
