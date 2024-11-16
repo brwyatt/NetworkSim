@@ -398,11 +398,15 @@ class DeviceShape:
 
         return handler
 
+    @property
+    def iface_enum(self):
+        return Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces})  # type: ignore
+
     def add_route(self):
         _route_bind = self.get_dataclass_for_function(
             self.device.ip.routes.add_route,
             overrides={
-                "iface": Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces}),  # type: ignore
+                "iface": self.iface_enum,
             },
         )
 
@@ -428,7 +432,7 @@ class DeviceShape:
         _ip_bind = self.get_dataclass_for_function(
             self.device.ip.bind,
             overrides={
-                "iface": Enum("iface", {str(iface.hwid): iface for iface in self.device.ifaces}),  # type: ignore
+                "iface": self.iface_enum,
             },
         )
 
