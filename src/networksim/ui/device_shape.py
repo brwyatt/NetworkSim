@@ -513,6 +513,21 @@ class DeviceShape:
             command=self.create_ip_send,
         )
 
+        arp_menu = tk.Menu(ip_menu, tearoff=0)
+        for arp_entry in self.device.ip.addr_table.table.values():
+            entry_menu = tk.Menu(arp_menu, tearoff=0)
+
+            hwid_menu = tk.Menu(entry_menu, tearoff=0)
+            hwid_menu.add_command(label=arp_entry.hwid)
+            entry_menu.add_cascade(label="HWID", menu=hwid_menu)
+
+            expiration_menu = tk.Menu(entry_menu, tearoff=0)
+            expiration_menu.add_command(label=arp_entry.expiration)
+            entry_menu.add_cascade(label="Expiration", menu=expiration_menu)
+
+            arp_menu.add_cascade(label=arp_entry.addr, menu=entry_menu)
+        ip_menu.add_cascade(label="ARP Entries", menu=arp_menu)
+
         return ip_menu
 
     def create_menu(self, event):
@@ -543,6 +558,27 @@ class DeviceShape:
         if len(self.device.process_list) > 0:
             proc_list_menu = self.create_process_menu(menu)
             menu.add_cascade(label="Processes", menu=proc_list_menu)
+
+        if hasattr(self.device, "CAM"):
+            cam_menu = tk.Menu(menu, tearoff=0)
+            for cam_entry in self.device.CAM.table.values():
+                entry_menu = tk.Menu(cam_menu, tearoff=0)
+
+                hwid_menu = tk.Menu(entry_menu, tearoff=0)
+                hwid_menu.add_command(
+                    label=f"[{self.device.ifaces.index(cam_entry.iface)}] {cam_entry.iface.hwid}",
+                )
+                entry_menu.add_cascade(label="Interface", menu=hwid_menu)
+
+                expiration_menu = tk.Menu(entry_menu, tearoff=0)
+                expiration_menu.add_command(label=cam_entry.expiration)
+                entry_menu.add_cascade(
+                    label="Expiration",
+                    menu=expiration_menu,
+                )
+
+                cam_menu.add_cascade(label=cam_entry.hwid, menu=entry_menu)
+            menu.add_cascade(label="CAM Entries", menu=cam_menu)
 
         menu.post(event.x_root, event.y_root)
         self.canvas.menu = menu
