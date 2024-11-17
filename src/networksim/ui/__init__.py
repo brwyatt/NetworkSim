@@ -28,6 +28,7 @@ class NetworkSimUI(tk.Frame):
     def step(self):
         self.sim.step()
         self.viewPort.step()
+        self.controlsPane.step()
 
     def build(self):
         self.viewPort = ViewPane(self, sim=self.sim)
