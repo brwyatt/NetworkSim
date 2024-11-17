@@ -45,6 +45,14 @@ class ViewPane(tk.Canvas):
         self.bind("<ButtonPress-3>", self.right_click)
         self.last_event = 0
 
+        # Bind mouse wheel events for zooming
+        # Windows
+        self.bind("<MouseWheel>", self.zoom)
+        # Linux
+        self.bind("<Button-4>", self.zoom)
+        self.bind("<Button-5>", self.zoom)
+        self.scale_factor = 1.0
+
     def remove_menu(self, event):
         if self.menu is not None:
             self.menu.destroy()
@@ -75,6 +83,42 @@ class ViewPane(tk.Canvas):
         self.drag_start_x = event.x
         self.drag_start_y = event.y
 
+    def zoom(self, event):
+        if event.num == 5 or event.delta < 0:  # Scroll down (zoom out)
+            scale_factor = 0.9
+        else:  # Scroll up (zoom in)
+            scale_factor = 1.1
+
+        self.scale_factor *= scale_factor
+
+        self.scale(tk.ALL, event.x, event.y, scale_factor, scale_factor)
+        self.configure(scrollregion=self.bbox(tk.ALL))
+
+    def reset_view(self):
+        reset_scale_factor = 1.0 / self.scale_factor
+
+        self.scale(tk.ALL, 0, 0, reset_scale_factor, reset_scale_factor)
+
+        self.scale_factor = 1.0
+
+        # Calculate the movement needed to center the canvas
+        canvas_center_x = self.winfo_width() / 2
+        canvas_center_y = self.winfo_height() / 2
+
+        # Calculate the center of all objects
+        coords = self.bbox(tk.ALL)
+        current_center_x = ((coords[2] - coords[0]) / 2) + coords[0]
+        current_center_y = ((coords[3] - coords[1]) / 2) + coords[1]
+
+        # Calculate the distance to recenter
+        dx = canvas_center_x - current_center_x
+        dy = canvas_center_y - current_center_y
+
+        # Move all objects on the canvas
+        self.move(tk.ALL, dx, dy)
+
+        self.configure(scrollregion=self.bbox(tk.ALL))
+
     def add_device(self, device: Device):
         print(f"ADDING: {device.name}")
         self.sim.add_device(device)
@@ -83,8 +127,8 @@ class ViewPane(tk.Canvas):
             canvas=self,
             x=(self.winfo_width() / 2) - 25,
             y=(self.winfo_height() / 2) - 25,
-            width=50,
-            height=50,
+            width=50 * self.scale_factor,
+            height=50 * self.scale_factor,
         )
         self.devices.append(shape)
 
