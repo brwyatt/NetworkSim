@@ -60,7 +60,7 @@ class SimControlsPane(tk.Frame):
         self.step_button = tk.Button(
             self,
             text="Step Once",
-            command=self.step_x,
+            command=self.master.step,
         )
         self.step_button.pack(side="left", padx=5, pady=5)
 
