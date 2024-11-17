@@ -95,6 +95,8 @@ class ViewPane(tk.Canvas):
         self.configure(scrollregion=self.bbox(tk.ALL))
 
     def reset_view(self):
+        self.update_idletasks()
+
         reset_scale_factor = 1.0 / self.scale_factor
 
         self.scale(tk.ALL, 0, 0, reset_scale_factor, reset_scale_factor)
