@@ -134,7 +134,7 @@ def get_var_fields(master, param_type, sticky="EW"):
             textvariable=var,
             validate="key",
             validatecommand=(
-                master.register(lambda P: P.isdigit()),
+                master.register(lambda P: P.isdigit() or P == ""),
                 "%P",
             ),
         )
