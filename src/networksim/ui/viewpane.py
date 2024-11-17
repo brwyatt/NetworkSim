@@ -105,17 +105,18 @@ class ViewPane(tk.Canvas):
         canvas_center_x = self.winfo_width() / 2
         canvas_center_y = self.winfo_height() / 2
 
-        # Calculate the center of all objects
         coords = self.bbox(tk.ALL)
-        current_center_x = ((coords[2] - coords[0]) / 2) + coords[0]
-        current_center_y = ((coords[3] - coords[1]) / 2) + coords[1]
+        if coords is not None:
+            # Calculate the center of all objects
+            current_center_x = ((coords[2] - coords[0]) / 2) + coords[0]
+            current_center_y = ((coords[3] - coords[1]) / 2) + coords[1]
 
-        # Calculate the distance to recenter
-        dx = canvas_center_x - current_center_x
-        dy = canvas_center_y - current_center_y
+            # Calculate the distance to recenter
+            dx = canvas_center_x - current_center_x
+            dy = canvas_center_y - current_center_y
 
-        # Move all objects on the canvas
-        self.move(tk.ALL, dx, dy)
+            # Move all objects on the canvas
+            self.move(tk.ALL, dx, dy)
 
         self.configure(scrollregion=self.bbox(tk.ALL))
 
