@@ -42,6 +42,16 @@ class NetworkSimUI(tk.Frame):
         self.controlsPane = SimControlsPane(self, sim=self.sim)
         self.controlsPane.grid(column=1, row=1, sticky="NSEW")
 
+        self.update_size()
+
+    def update_size(self):
+        toplevel = self.winfo_toplevel()
+        toplevel.update_idletasks()
+        toplevel.update()
+        reqwidth = toplevel.winfo_reqwidth()
+        reqheight = toplevel.winfo_reqheight()
+        toplevel.geometry(f"{reqwidth}x{reqheight}")
+
 
 def start_ui():
     ui = NetworkSimUI()
