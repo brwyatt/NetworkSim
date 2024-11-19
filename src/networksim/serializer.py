@@ -68,6 +68,9 @@ def serialize(value, context=None, ref_types=None):
             "type": f"{value.__class__.__module__}:{value.__class__.__name__}",
             "properties": {},
         }
+        if isinstance(value, ref_types):
+            # Add incomplete dummy data to prevent recursion
+            context[value.__serial_id] = data
         for prop_name, prop_value in value.__dict__.items():
             serialized_value, context = serialize(
                 prop_value,
