@@ -188,7 +188,9 @@ def deserialize(value, context=None):  # noqa: C901
             v, context = deserialize(v, context=context)
             positional_params[k] = v
 
-        inst = type(cls.__name__, (cls,), {})(**positional_params)
+        inst = type(cls.__name__, (cls,), {"__module__": module.__name__})(
+            **positional_params,
+        )
 
         if "__serial_id" in value.get("properties", {}):
             # Add partial class to prevent infinite recursion
