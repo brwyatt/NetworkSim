@@ -24,6 +24,17 @@ default_ref_types = (
 raw_types = (int, str, float, type(None))
 
 
+def _load(path):
+    type_parts = path.split(":")
+    module_path = type_parts[0].split(".")
+    module = __import__(module_path[0])
+    for x in module_path[1:]:
+        module = getattr(module, x)
+    cls = getattr(module, type_parts[1])
+
+    return module, cls
+
+
 def serialize(value, context=None, ref_types=None):
     if context is None:
         context = {}
@@ -58,6 +69,12 @@ def serialize(value, context=None, ref_types=None):
             serialized_value, serialized_context = serialize(i, context)
             context = {**context, **serialized_context}
             data["value"].append(serialized_value)
+        return data, context
+    if isinstance(value, type):
+        data = {
+            "type": "TYPE",
+            "value": f"{value.__module__}:{value.__name__}",
+        }
         return data, context
     if isinstance(value, object):
         if isinstance(value, ref_types):
@@ -102,6 +119,9 @@ def deserialize(value, context=None):  # noqa: C901
         raise TypeError(
             f"Invalid serialization object: {type(value).__name__}",
         )
+    if value["type"] == "TYPE":
+        module, cls = _load(value["value"])
+        return cls, context
     if value["type"] in ["list", "set", "tuple"]:
         data = []
         for x in value.get("value", []):
@@ -130,12 +150,7 @@ def deserialize(value, context=None):  # noqa: C901
         if isinstance(data, object):
             return data, context
     if ":" in value["type"]:
-        type_parts = value["type"].split(":")
-        module_path = type_parts[0].split(".")
-        module = __import__(module_path[0])
-        for x in module_path[1:]:
-            module = getattr(module, x)
-        cls = getattr(module, type_parts[1])
+        module, cls = _load(value["type"])
 
         sig = inspect.signature(cls.__init__)
 
