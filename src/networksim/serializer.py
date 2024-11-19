@@ -34,11 +34,18 @@ def serialize(value, context=None, ref_types=None):
             data["items"].append([serialized_key, serialized_value])
         return data, context
     if isinstance(value, (list, set, tuple)):
-        data = []
+        data = {
+            "type": (
+                "tuple"
+                if isinstance(value, tuple)
+                else "set" if isinstance(value, set) else "list"
+            ),
+            "value": [],
+        }
         for i in value:
             serialized_value, serialized_context = serialize(i, context)
             context = {**context, **serialized_context}
-            data.append(serialized_value)
+            data["value"].append(serialized_value)
         return data, context
     if isinstance(value, object):
         if isinstance(value, ref_types):
@@ -71,21 +78,25 @@ def _parse_bytes(b):
     return bytes(res)
 
 
-def deserialize(value, context=None):
+def deserialize(value, context=None):  # noqa: C901
     if context is None:
         context = {}
     if isinstance(value, raw_types):
         return value, context
-    if isinstance(value, (list, set, tuple)):
-        data = []
-        for x in value:
-            val, context = deserialize(x, context=context)
-            data.append(val)
-        return data, context
     if not isinstance(value, dict) or "type" not in value:
         raise TypeError(
             f"Invalid serialization object: {type(value).__name__}",
         )
+    if value["type"] in ["list", "set", "tuple"]:
+        data = []
+        for x in value.get("value", []):
+            val, context = deserialize(x, context=context)
+            data.append(val)
+        if value["type"] == "set":
+            data = set(data)
+        elif value["type"] == "tuple":
+            data = tuple(data)
+        return data, context
     if value["type"] == "bytes":
         return _parse_bytes(value.get("value", "")), context
     if value["type"] == "dict":
