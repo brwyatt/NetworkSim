@@ -1,3 +1,4 @@
+import importlib
 import inspect
 from collections import namedtuple
 from uuid import uuid4
@@ -27,10 +28,7 @@ raw_types = (int, str, float, type(None))
 
 def _load(path):
     type_parts = path.split(":")
-    module_path = type_parts[0].split(".")
-    module = __import__(module_path[0])
-    for x in module_path[1:]:
-        module = getattr(module, x)
+    module = importlib.import_module(type_parts[0])
     cls = getattr(module, type_parts[1])
 
     return module, cls
