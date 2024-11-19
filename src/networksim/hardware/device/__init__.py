@@ -10,6 +10,7 @@ from networksim.hardware.interface import Interface
 from networksim.helpers import randbytes
 from networksim.hwid import HWID
 from networksim.packet import Packet
+from networksim.serializer import Serializable
 
 if TYPE_CHECKING:
     from networksim.application import Application
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Device:
+class Device(Serializable):
     default_iface_count = 1
 
     def __init__(

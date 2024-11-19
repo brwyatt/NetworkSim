@@ -1,10 +1,12 @@
 import logging
 
+from networksim.serializer import Serializable
+
 
 logger = logging.getLogger(__name__)
 
 
-class IPAddr:
+class IPAddr(Serializable):
     length_bytes = 4
 
     def __init__(self, byte_value: bytes):

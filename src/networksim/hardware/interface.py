@@ -3,6 +3,7 @@ from typing import Optional
 
 from networksim.hwid import HWID
 from networksim.packet.ethernet import EthernetPacket
+from networksim.serializer import Serializable
 
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ class AlreadyConnectedException(Exception):
     pass
 
 
-class Interface:
+class Interface(Serializable):
     def __init__(
         self,
         hwid: Optional[HWID] = None,
