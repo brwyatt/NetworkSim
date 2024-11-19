@@ -1,4 +1,5 @@
 import inspect
+from collections import namedtuple
 from uuid import uuid4
 
 from networksim.hardware.cable import Cable
@@ -56,7 +57,8 @@ def serialize(value, context=None, ref_types=None):
             context = {**context, **serialized_value_context}
             data["items"].append([serialized_key, serialized_value])
         return data, context
-    if isinstance(value, (list, set, tuple)):
+    if isinstance(value, (list, set, tuple)) and not hasattr(value, "_asdict"):
+        # most list-like things... excluding namedtuples
         data = {
             "type": (
                 "tuple"
@@ -97,7 +99,11 @@ def serialize(value, context=None, ref_types=None):
         if isinstance(value, ref_types):
             # Add incomplete dummy data to prevent recursion
             context[value.__serial_id] = data
-        for prop_name, prop_value in value.__dict__.items():
+        # Handle namedtuples
+        props = (
+            value.__dict__ if not isinstance(value, tuple) else value._asdict()
+        )
+        for prop_name, prop_value in props.items():
             serialized_value, context = serialize(
                 prop_value,
                 context=context,
@@ -163,7 +169,11 @@ def deserialize(value, context=None):  # noqa: C901
     if ":" in value["type"]:
         module, cls = _load(value["type"])
 
-        sig = inspect.signature(cls.__init__)
+        # Handle namedtuples special case
+        if issubclass(cls, tuple):
+            sig = inspect.signature(cls.__new__)
+        else:
+            sig = inspect.signature(cls.__init__)
 
         positional_param_list = [
             param.name
@@ -186,9 +196,11 @@ def deserialize(value, context=None):  # noqa: C901
             # Add partial class to prevent infinite recursion
             context[value["properties"]["__serial_id"]] = inst
 
-        for k, v in value.get("properties", {}).items():
-            v, context = deserialize(v, context=context)
-            setattr(inst, k, v)
+        if not issubclass(cls, tuple):
+            # Skip for namedtuples, this will fail
+            for k, v in value.get("properties", {}).items():
+                v, context = deserialize(v, context=context)
+                setattr(inst, k, v)
 
         if hasattr(inst, "__serial_id"):
             context[inst.__serial_id] = inst
