@@ -76,6 +76,14 @@ def serialize(value, context=None, ref_types=None):
             "value": f"{value.__module__}:{value.__name__}",
         }
         return data, context
+    if inspect.ismethod(value):
+        instance, context = serialize(value.__self__, context=context)
+        data = {
+            "type": "METHOD",
+            "method": value.__name__,
+            "instance": instance,
+        }
+        return data, context
     if isinstance(value, object):
         if isinstance(value, ref_types):
             if not hasattr(value, "__serial_id"):
@@ -122,6 +130,9 @@ def deserialize(value, context=None):  # noqa: C901
     if value["type"] == "TYPE":
         module, cls = _load(value["value"])
         return cls, context
+    if value["type"] == "METHOD":
+        instance, context = deserialize(value["instance"], context=context)
+        return getattr(instance, value["method"]), context
     if value["type"] in ["list", "set", "tuple"]:
         data = []
         for x in value.get("value", []):
