@@ -138,6 +138,10 @@ def deserialize(value, context=None):  # noqa: C901
 
         inst = type(cls.__name__, (cls,), {})()
 
+        if "__serial_id" in value.get("properties", {}):
+            # Add partial class to prevent infinite recursion
+            context[value["properties"]["__serial_id"]] = inst
+
         for k, v in value.get("properties", {}).items():
             v, context = deserialize(v, context=context)
             setattr(inst, k, v)
