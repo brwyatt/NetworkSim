@@ -9,6 +9,7 @@ from networksim.simulation import Simulation
 
 
 default_ref_types = (IPAddr, HWID, Device, Simulation, Interface, Cable)
+raw_types = (int, str, float)
 
 
 def serialize(value, context=None, ref_types=None):
@@ -16,7 +17,7 @@ def serialize(value, context=None, ref_types=None):
         context = {}
     if ref_types is None:
         ref_types = default_ref_types
-    if isinstance(value, (int, str, float)):
+    if isinstance(value, raw_types):
         return value, context
     if isinstance(value, (bytes)):
         return {
@@ -61,3 +62,66 @@ def serialize(value, context=None, ref_types=None):
         return data, context
 
     raise TypeError(f'Unable to serialize type "{type(value)}"')
+
+
+def _parse_bytes(b):
+    res = []
+    for i in range(0, len(b), 2):
+        res.append(int(b[i : i + 2], 16).to_bytes(1, "big")[0])
+    return bytes(res)
+
+
+def deserialize(value, context=None):
+    if context is None:
+        context = {}
+    if isinstance(value, raw_types):
+        return value, context
+    if isinstance(value, (list, set, tuple)):
+        data = []
+        for x in value:
+            val, context = deserialize(x, context=context)
+            data.append(val)
+        return data, context
+    if not isinstance(value, dict) or "type" not in value:
+        raise TypeError(
+            f"Invalid serialization object: {type(value).__name__}",
+        )
+    if value["type"] == "bytes":
+        return _parse_bytes(value.get("value", "")), context
+    if value["type"] == "dict":
+        data = {}
+        for x in value["items"]:
+            key, context = deserialize(x[0], context=context)
+            val, context = deserialize(x[1], context=context)
+            data[key] = val
+        return data, context
+    if value["type"] == "REF":
+        if value.get("id") not in context:
+            raise ValueError(f"Missing REF in context: {value.get('id')}")
+        data = context[value["id"]]
+        if isinstance(data, dict) and data.get("type") is not None:
+            return deserialize(data, context=context)
+        if isinstance(data, object):
+            return data, context
+    if ":" in value["type"]:
+        type_parts = value["type"].split(":")
+        module_path = type_parts[0].split(".")
+        module = __import__(module_path[0])
+        for x in module_path[1:]:
+            module = getattr(module, x)
+        cls = getattr(module, type_parts[1])
+
+        inst = type(cls.__name__, (cls,), {})()
+
+        for k, v in value.get("properties", {}).items():
+            v, context = deserialize(v, context=context)
+            setattr(inst, k, v)
+
+        if hasattr(inst, "__serial_id"):
+            context[inst.__serial_id] = inst
+
+        return inst, context
+
+    raise ValueError(
+        f"Unable to deserialize, unrecognized format or type: {type(value).__name__} - {value.get('type')}",
+    )
