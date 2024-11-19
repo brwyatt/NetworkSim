@@ -1,3 +1,4 @@
+import inspect
 from uuid import uuid4
 
 from networksim.hardware.cable import Cable
@@ -136,7 +137,24 @@ def deserialize(value, context=None):  # noqa: C901
             module = getattr(module, x)
         cls = getattr(module, type_parts[1])
 
-        inst = type(cls.__name__, (cls,), {})()
+        sig = inspect.signature(cls.__init__)
+
+        positional_param_list = [
+            param.name
+            for param in sig.parameters.values()
+            if param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+            and param.default is param.empty
+        ]
+
+        positional_params = {}
+        for k, v in value.get("properties", {}).items():
+            k = k.lstrip("_")
+            if k not in positional_param_list:
+                continue
+            v, context = deserialize(v, context=context)
+            positional_params[k] = v
+
+        inst = type(cls.__name__, (cls,), {})(**positional_params)
 
         if "__serial_id" in value.get("properties", {}):
             # Add partial class to prevent infinite recursion
