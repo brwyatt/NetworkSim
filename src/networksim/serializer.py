@@ -5,11 +5,22 @@ from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
+from networksim.packet import Packet
+from networksim.packet.payload import Payload
 from networksim.simulation import Simulation
 
 
-default_ref_types = (IPAddr, HWID, Device, Simulation, Interface, Cable)
-raw_types = (int, str, float)
+default_ref_types = (
+    IPAddr,
+    HWID,
+    Device,
+    Simulation,
+    Interface,
+    Cable,
+    Packet,
+    Payload,
+)
+raw_types = (int, str, float, type(None))
 
 
 def serialize(value, context=None, ref_types=None):
