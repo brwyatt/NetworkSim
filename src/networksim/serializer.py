@@ -1,42 +1,21 @@
 from uuid import uuid4
 
-
-class Serializable:
-    @property
-    def id(self):
-        if not hasattr(self, "_id"):
-            self._id = str(uuid4())
-        return self._id
-
-    def serialize(self, context=None):
-        if context is None:
-            context = {}
-        data = {
-            "id": self.id,
-            "type": f"{self.__class__.__module__}:{self.__class__.__name__}",
-            "properties": {},
-        }
-
-        for name, value in self.__dict__.items():
-            print(f"{self.id}: {name}")
-            serialized_value, serialized_context = serialize(
-                value,
-                context=context,
-            )
-            data["properties"][name] = serialized_value
-            context = {**context, **serialized_context}
-
-        return data, context
-
-    @classmethod
-    def deserialize(cls, properties, context=None):
-        if context is None:
-            context = {}
+from networksim.hardware.cable import Cable
+from networksim.hardware.device import Device
+from networksim.hardware.interface import Interface
+from networksim.hwid import HWID
+from networksim.ipaddr import IPAddr
+from networksim.simulation import Simulation
 
 
-def serialize(value, context=None):
+default_ref_types = (IPAddr, HWID, Device, Simulation, Interface, Cable)
+
+
+def serialize(value, context=None, ref_types=None):
     if context is None:
         context = {}
+    if ref_types is None:
+        ref_types = default_ref_types
     if isinstance(value, (int, str, float)):
         return value, context
     if isinstance(value, (bytes)):
@@ -44,15 +23,6 @@ def serialize(value, context=None):
             "type": "bytes",
             "value": "".join(format(x, "02x") for x in value),
         }, context
-    if isinstance(value, Serializable):
-        if value.id in context:
-            return {"type": "REF", "id": value.id}, context
-        serialized_value, serialized_context = value.serialize(context=context)
-        return {"type": "REF", "id": value.id}, {
-            **context,
-            **serialized_context,
-            value.id: serialized_value,
-        }
     if isinstance(value, dict):
         data = {"type": "dict", "items": []}
         for k, v in value.items():
@@ -70,17 +40,24 @@ def serialize(value, context=None):
             data.append(serialized_value)
         return data, context
     if isinstance(value, object):
+        if isinstance(value, ref_types):
+            if not hasattr(value, "__serial_id"):
+                value.__serial_id = str(uuid4())
+            if value.__serial_id in context:
+                return {"type": "REF", "id": value.__serial_id}, context
         data = {
             "type": f"{value.__class__.__module__}:{value.__class__.__name__}",
             "properties": {},
         }
         for prop_name, prop_value in value.__dict__.items():
-            serialized_value, serialized_context = serialize(
+            serialized_value, context = serialize(
                 prop_value,
                 context=context,
             )
             data["properties"][prop_name] = serialized_value
-            context = {**context, **serialized_context}
+        if isinstance(value, ref_types):
+            context[value.__serial_id] = data
+            data = {"type": "REF", "id": value.__serial_id}
         return data, context
 
     raise TypeError(f'Unable to serialize type "{type(value)}"')

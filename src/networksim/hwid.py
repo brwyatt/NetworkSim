@@ -2,13 +2,12 @@ import logging
 from typing import Optional
 
 from networksim.helpers import randbytes
-from networksim.serializer import Serializable
 
 
 logger = logging.getLogger(__name__)
 
 
-class HWID(Serializable):
+class HWID:
     length_bytes = 6
 
     def __init__(self, byte_value: Optional[bytes] = None):

@@ -1,13 +1,12 @@
 import logging
 
 from networksim.hardware.interface import Interface
-from networksim.serializer import Serializable
 
 
 logger = logging.getLogger(__name__)
 
 
-class Cable(Serializable):
+class Cable:
     def __init__(
         self,
         a: Interface = None,
