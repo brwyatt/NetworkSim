@@ -1,4 +1,6 @@
 import tkinter as tk
+from typing import List
+from typing import Optional
 from typing import Tuple
 
 from networksim.hardware.cable import Cable
@@ -31,11 +33,11 @@ class ViewPane(tk.Canvas):
 
         self.sim = sim
 
-        self.devices = []
+        self.devices: List[DeviceShape] = []
         self.menu = None
         self.connect_start = None
         self.draw_cable = None
-        self.cables = []
+        self.cables: List[CableShape] = []
 
         self.drag_start_x = None
         self.drag_start_y = None
@@ -122,18 +124,31 @@ class ViewPane(tk.Canvas):
 
         self.configure(scrollregion=self.bbox(tk.ALL))
 
-    def add_device(self, device: Device):
+    def add_device(
+        self,
+        device: Device,
+        x: Optional[int] = None,
+        y: Optional[int] = None,
+    ):
         print(f"ADDING: {device.name}")
+        if x is None:
+            x = (self.winfo_width() / 2) - 25
+        if y is None:
+            y = (self.winfo_height() / 2) - 25
+
+        print(f"({x}, {y})@{self.scale_factor}")
         self.sim.add_device(device)
         shape = DeviceShape(
             device=device,
             canvas=self,
-            x=(self.winfo_width() / 2) - 25,
-            y=(self.winfo_height() / 2) - 25,
+            x=x,
+            y=y,
             width=50 * self.scale_factor,
             height=50 * self.scale_factor,
         )
         self.devices.append(shape)
+
+        return shape
 
     def start_connect(self, device: DeviceShape, iface: Interface):
         print(f"Starting connect: {device.device.name} - {iface.hwid}")
