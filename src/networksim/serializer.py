@@ -87,16 +87,19 @@ def serialize(value, context=None, ref_types=None):
     if isinstance(value, object):
         if isinstance(value, ref_types):
             if not hasattr(value, "__serial_id"):
-                value.__serial_id = str(uuid4())
-            if value.__serial_id in context:
-                return {"type": "REF", "id": value.__serial_id}, context
+                setattr(value, "__serial_id", str(uuid4()))
+            if getattr(value, "__serial_id") in context:
+                return {
+                    "type": "REF",
+                    "id": getattr(value, "__serial_id"),
+                }, context
         data = {
             "type": f"{value.__class__.__module__}:{value.__class__.__name__}",
             "properties": {},
         }
         if isinstance(value, ref_types):
             # Add incomplete dummy data to prevent recursion
-            context[value.__serial_id] = data
+            context[getattr(value, "__serial_id")] = data
         # Handle namedtuples
         props = (
             value.__dict__ if not isinstance(value, tuple) else value._asdict()
@@ -108,8 +111,8 @@ def serialize(value, context=None, ref_types=None):
             )
             data["properties"][prop_name] = serialized_value
         if isinstance(value, ref_types):
-            context[value.__serial_id] = data
-            data = {"type": "REF", "id": value.__serial_id}
+            context[getattr(value, "__serial_id")] = data
+            data = {"type": "REF", "id": getattr(value, "__serial_id")}
         return data, context
 
     raise TypeError(f'Unable to serialize type "{type(value)}"')
@@ -203,7 +206,7 @@ def deserialize(value, context=None):  # noqa: C901
                 setattr(inst, k, v)
 
         if hasattr(inst, "__serial_id"):
-            context[inst.__serial_id] = inst
+            context[getattr(inst, "__serial_id")] = inst
 
         return inst, context
 
