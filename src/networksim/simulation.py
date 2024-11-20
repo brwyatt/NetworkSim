@@ -156,3 +156,20 @@ class Simulation:
         self.add_device(a)
         self.add_device(b)
         self.add_cable(cable)
+
+    @classmethod
+    def deserialize(cls, data):
+        from networksim.serializer import deserialize
+
+        obj, context = deserialize(data["simulation"], context=data["context"])
+
+        return obj
+
+    def serialize(self):
+        from networksim.serializer import serialize
+
+        data, context = serialize(self)
+        return {
+            "simulation": data,
+            "context": context,
+        }
