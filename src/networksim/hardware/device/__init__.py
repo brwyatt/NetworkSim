@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -33,7 +32,7 @@ class Device:
             name = f"{type(self).__name__}-{self.base_MAC.hex()}"
         self.name = name
         self.ifaces = []
-        self.connection_states = defaultdict(lambda: False)
+        self.connection_states = {}
         self.auto_process = auto_process
         self.time = 0
 
@@ -62,7 +61,7 @@ class Device:
 
     def check_connection_state_changes(self):
         for iface in self.ifaces:
-            if self.connection_states[iface] != iface.connected:
+            if self.connection_states.get(iface, False) != iface.connected:
                 # Connection state has changed!
                 self.connection_states[iface] = iface.connected
                 self.handle_connection_state_change(iface)
