@@ -9,9 +9,11 @@ class Simulation:
     def __init__(self):
         self.cables = []
         self.devices = []
+        self.step_count = 0
 
     def step(self, steps: int = 1):
         for _ in range(0, steps):
+            self.step_count += 1
             for x in self.cables + self.devices:
                 x.step()
 

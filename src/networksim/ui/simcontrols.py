@@ -2,9 +2,11 @@ import time
 import tkinter as tk
 from tkinter import font
 
+from networksim.simulation import Simulation
+
 
 class SimControlsPane(tk.Frame):
-    def __init__(self, master=None, *args, sim):
+    def __init__(self, master=None, *args, sim: Simulation):
         super().__init__(master=master)
 
         self.sim = sim
@@ -42,7 +44,7 @@ class SimControlsPane(tk.Frame):
     def build(self):
         self.step_label = tk.Label(self, text="Current Step:")
         self.step_label.pack(side="left", padx=5, pady=5)
-        self.step_count = tk.IntVar(self, value=0)
+        self.step_count = tk.IntVar(self, value=self.sim.step_count)
         self.step_counter = tk.Entry(
             self,
             textvariable=self.step_count,
