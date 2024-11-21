@@ -27,7 +27,7 @@ class Cable:
 
     @a.setter
     def a(self, iface: Interface):
-        if hasattr(self, "_b") and self._a:
+        if hasattr(self, "_a") and self._a:
             self._a.disconnect()
 
         if iface is None:
