@@ -35,18 +35,30 @@ class DeviceShape:
         self,
         device: Device,
         canvas: "ViewPane",
-        x: int,
-        y: int,
-        width: int = 50,
-        height: int = 50,
+        x: Optional[int] = None,
+        y: Optional[int] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
         label: Optional[str] = None,
     ):
+        if width is None:
+            width = 50
+        if height is None:
+            height = 50
+
         self.device = device
         self.canvas = canvas
-        self.x = x
-        self.y = y
-        self.width = max(5, width)
-        self.height = max(5, height)
+        self.width = width
+        self.height = height
+
+        width = max(5, width * self.canvas.scale_factor)
+        height = max(5, height * self.canvas.scale_factor)
+
+        self.canvas.update_idletasks()
+        if x is None:
+            x = (self.canvas.winfo_width() / 2) - (width / 2)
+        if y is None:
+            y = (self.canvas.winfo_height() / 2) - (height / 2)
 
         self.update_handlers = []
 
@@ -82,20 +94,19 @@ class DeviceShape:
     def scale(self, x, y, scale_factor):
         rect_coords = self.canvas.coords(self.rect)
 
-        width = rect_coords[2] - rect_coords[0]
-        height = rect_coords[3] - rect_coords[1]
-        small_dimension = min(width, height)
+        small_dimension = min(self.width, self.height)
 
         # restrict minimum size
         size_scale_factor = (
-            max(5, (small_dimension * scale_factor)) / small_dimension
+            max(5, (small_dimension * self.canvas.scale_factor))
+            / small_dimension
         )
 
         new_x = (rect_coords[0] - x) * scale_factor + x
         new_y = (rect_coords[1] - y) * scale_factor + y
 
-        new_width = width * size_scale_factor
-        new_height = height * size_scale_factor
+        new_width = self.width * size_scale_factor
+        new_height = self.height * size_scale_factor
 
         self.canvas.coords(
             self.bgrect,

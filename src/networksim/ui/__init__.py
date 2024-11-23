@@ -106,6 +106,8 @@ class NetworkSimUI(tk.Frame):
                 data["ui_data"]["devices"][device_serial] = {
                     "x": coords[0],
                     "y": coords[1],
+                    "width": device_shape.width,
+                    "height": device_shape.height,
                 }
             serialized = json.dumps(data).encode()
             if file_path.endswith(".gz"):
@@ -161,8 +163,10 @@ class NetworkSimUI(tk.Frame):
                 )
                 device_shape = self.viewPort.add_device(
                     device,
-                    device_shape_data.get("x"),
-                    device_shape_data.get("y"),
+                    x=device_shape_data.get("x"),
+                    y=device_shape_data.get("y"),
+                    width=device_shape_data.get("width"),
+                    height=device_shape_data.get("height"),
                 )
                 for iface in device.ifaces:
                     device_shapes_by_iface[getattr(iface, "__serial_id")] = (

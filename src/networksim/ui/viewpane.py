@@ -104,9 +104,12 @@ class ViewPane(tk.Canvas):
 
         reset_scale_factor = 1.0 / self.scale_factor
 
-        self.scale(tk.ALL, 0, 0, reset_scale_factor, reset_scale_factor)
-
         self.scale_factor = 1.0
+
+        for device in self.devices:
+            device.scale(0, 0, reset_scale_factor)
+        for cable in self.cables:
+            cable.update_location()
 
         # Calculate the movement needed to center the canvas
         canvas_center_x = self.winfo_width() / 2
@@ -132,22 +135,20 @@ class ViewPane(tk.Canvas):
         device: Device,
         x: Optional[int] = None,
         y: Optional[int] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
     ):
         print(f"ADDING: {device.name}")
-        if x is None:
-            x = (self.winfo_width() / 2) - 25
-        if y is None:
-            y = (self.winfo_height() / 2) - 25
 
         print(f"({x}, {y})@{self.scale_factor}")
         self.sim.add_device(device)
         shape = DeviceShape(
             device=device,
             canvas=self,
+            width=width,
+            height=height,
             x=x,
             y=y,
-            width=50 * self.scale_factor,
-            height=50 * self.scale_factor,
         )
         self.devices.append(shape)
 
