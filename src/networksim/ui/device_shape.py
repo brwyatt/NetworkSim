@@ -177,7 +177,7 @@ class DeviceShape:
             if iface.connected:
                 continue
             iface_menu.add_command(
-                label=f"{iface_num} - ({str(iface.hwid)})",
+                label=f"[{iface_num}] - {str(iface.hwid)} (Max Bandwidth: {iface.max_bandwidth} | Queue Length: {iface.queue_length})",
                 command=handler_generator(iface),
             )
 
@@ -245,6 +245,14 @@ class DeviceShape:
             iface_num += 1
 
             iface_menu = tk.Menu(ifaces_menu, tearoff=False)
+            iface_menu.add_command(
+                label=f"Max Bandwidth: {iface.max_bandwidth}",
+                state="disabled",
+            )
+            iface_menu.add_command(
+                label=f"Queue Length: {iface.queue_length}",
+                state="disabled",
+            )
 
             if not iface.connected:
                 iface_menu.add_command(
@@ -330,7 +338,7 @@ class DeviceShape:
                     menu=rec_queue_menu,
                 )
             ifaces_menu.add_cascade(
-                label=f"{iface_num} - ({str(iface.hwid)})",
+                label=f"[{iface_num}] - {str(iface.hwid)}",
                 menu=iface_menu,
             )
 

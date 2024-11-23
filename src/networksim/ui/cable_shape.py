@@ -160,6 +160,18 @@ class CableShape:
     def create_menu(self, event):
         menu = tk.Menu(self.canvas, tearoff=0)
         menu.add_command(
+            label=f"Length: {self.cable.length}",
+            state="disabled",
+        )
+        menu.add_command(
+            label=f"Bandwidth: {self.cable.bandwidth}",
+            state="disabled",
+        )
+        menu.add_command(
+            label=f"Max Bandwidth: {self.cable.max_bandwidth}",
+            state="disabled",
+        )
+        menu.add_command(
             label="Delete",
             command=lambda: self.canvas.delete_cable(self),
         )
