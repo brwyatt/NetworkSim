@@ -93,7 +93,10 @@ class ViewPane(tk.Canvas):
 
         self.scale_factor *= scale_factor
 
-        self.scale(tk.ALL, event.x, event.y, scale_factor, scale_factor)
+        for device in self.devices:
+            device.scale(event.x, event.y, scale_factor)
+        for cable in self.cables:
+            cable.update_location()
         self.configure(scrollregion=self.bbox(tk.ALL))
 
     def reset_view(self):

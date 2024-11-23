@@ -79,7 +79,7 @@ class CableShape:
         ax, ay = self.a.get_midpoint()
         bx, by = self.b.get_midpoint()
 
-        packet_size = 10 * self.canvas.scale_factor
+        packet_size = max(10, 10 * self.canvas.scale_factor)
 
         for i in range(0, self.cable.length):
             ratio = (i + 1) / (self.cable.length + 1)

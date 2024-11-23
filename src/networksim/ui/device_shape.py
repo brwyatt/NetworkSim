@@ -45,18 +45,18 @@ class DeviceShape:
         self.canvas = canvas
         self.x = x
         self.y = y
-        self.width = width
-        self.height = height
+        self.width = max(5, width)
+        self.height = max(5, height)
 
         self.update_handlers = []
 
-        font_size = 10
+        self.font_size = 10
 
         self.bgrect = canvas.create_rectangle(
             x,
             y,
             x + width,
-            y + height + font_size + 2,
+            y + height + self.font_size + 2,
             width=0,
         )
         self.rect = canvas.create_rectangle(
@@ -68,8 +68,8 @@ class DeviceShape:
         )
         self.text = canvas.create_text(
             x + (width / 2),
-            y + height + (font_size / 2) + 2,
-            font=("Helvetica", font_size, "bold"),
+            y + height + (self.font_size / 2) + 2,
+            font=("Helvetica", self.font_size, "bold"),
             text=label if label is not None else device.name,
         )
 
@@ -78,6 +78,44 @@ class DeviceShape:
             canvas.tag_bind(shape, "<ButtonPress-1>", self.left_click)
             canvas.tag_bind(shape, "<B1-Motion>", self.drag)
             canvas.tag_bind(shape, "<ButtonPress-3>", self.right_click)
+
+    def scale(self, x, y, scale_factor):
+        rect_coords = self.canvas.coords(self.rect)
+
+        width = rect_coords[2] - rect_coords[0]
+        height = rect_coords[3] - rect_coords[1]
+        small_dimension = min(width, height)
+
+        # restrict minimum size
+        size_scale_factor = (
+            max(5, (small_dimension * scale_factor)) / small_dimension
+        )
+
+        new_x = (rect_coords[0] - x) * scale_factor + x
+        new_y = (rect_coords[1] - y) * scale_factor + y
+
+        new_width = width * size_scale_factor
+        new_height = height * size_scale_factor
+
+        self.canvas.coords(
+            self.bgrect,
+            new_x,
+            new_y,
+            new_x + new_width,
+            new_y + new_height + self.font_size + 2,
+        )
+        self.canvas.coords(
+            self.rect,
+            new_x,
+            new_y,
+            new_x + new_width,
+            new_y + new_height,
+        )
+        self.canvas.coords(
+            self.text,
+            new_x + (new_width / 2),
+            new_y + new_height + (self.font_size / 2) + 2,
+        )
 
     def send_updates(self):
         for handler in self.update_handlers:
