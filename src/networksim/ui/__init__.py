@@ -1,3 +1,4 @@
+import gzip
 import json
 import tkinter as tk
 import tkinter.dnd as dnd
@@ -14,6 +15,12 @@ from networksim.ui.viewpane import ViewPane
 
 
 class NetworkSimUI(tk.Frame):
+    file_types_save = [
+        ("NetworkSim JSON (Compressed)", "*.nsj.gz"),
+        ("NetworkSim JSON", "*.nsj"),
+    ]
+    file_types_load = [("NetworkSim JSON types", ("*.nsj.gz", "*.nsj"))]
+
     def __init__(self, master=None):
         super().__init__(master=master)
         self.master.title("Network Sim")
@@ -80,28 +87,31 @@ class NetworkSimUI(tk.Frame):
 
     def save(self):
         file_path = filedialog.asksaveasfilename(
-            defaultextension=".nsj",
-            filetypes=[("NetworkSim JSON", "*.nsj"), ("All files", "*.*")],
+            defaultextension=self.file_types_save[0][1],
+            filetypes=[*self.file_types_save, ("All files", "*.*")],
         )
 
         if not file_path:
             return
 
         try:
-            with open(file_path, "w") as file:
-                data = self.sim.serialize()
-                data["ui_data"] = {
-                    "scale_factor": self.viewPort.scale_factor,
-                    "devices": {},
+            data = self.sim.serialize()
+            data["ui_data"] = {
+                "scale_factor": self.viewPort.scale_factor,
+                "devices": {},
+            }
+            for device_shape in self.viewPort.devices:
+                device_serial = getattr(device_shape.device, "__serial_id")
+                coords = self.viewPort.coords(device_shape.rect)
+                data["ui_data"]["devices"][device_serial] = {
+                    "x": coords[0],
+                    "y": coords[1],
                 }
-                for device_shape in self.viewPort.devices:
-                    device_serial = getattr(device_shape.device, "__serial_id")
-                    coords = self.viewPort.coords(device_shape.rect)
-                    data["ui_data"]["devices"][device_serial] = {
-                        "x": coords[0],
-                        "y": coords[1],
-                    }
-                json.dump(data, file)
+            serialized = json.dumps(data).encode()
+            if file_path.endswith(".gz"):
+                serialized = gzip.compress(serialized)
+            with open(file_path, "wb") as file:
+                file.write(serialized)
         except Exception as e:
             traceback.print_exc()
             ErrorWindow(
@@ -117,56 +127,59 @@ class NetworkSimUI(tk.Frame):
 
     def load(self):
         file_path = filedialog.askopenfilename(
-            filetypes=[("NetworkSim JSON", "*.nsj"), ("All files", "*.*")],
+            filetypes=[*self.file_types_load, ("All files", "*.*")],
         )
 
         if not file_path:
             return
 
         try:
-            with open(file_path, "r") as file:
-                data = json.load(file)
+            with open(file_path, "rb") as file:
+                data = file.read()
 
-                ui_data = data.get("ui_data", {})
-                data, context = deserialize(
-                    data["simulation"],
-                    context=data["context"],
+            if file_path.endswith(".gz"):
+                data = gzip.decompress(data)
+            data = json.loads(data.decode())
+            ui_data = data.get("ui_data", {})
+            data, context = deserialize(
+                data["simulation"],
+                context=data["context"],
+            )
+
+            self.sim = data
+            self.build()
+
+            self.viewPort.scale_factor = ui_data.get("scale_factor", 1.0)
+
+            device_shapes_by_iface = {}
+            for device in self.sim.devices:
+                device_serial = getattr(device, "__serial_id")
+                print(f"LOAD DEVICE: {device_serial}")
+                device_shape_data = ui_data.get("devices", {}).get(
+                    device_serial,
+                    {},
                 )
-
-                self.sim = data
-                self.build()
-
-                self.viewPort.scale_factor = ui_data.get("scale_factor", 1.0)
-
-                device_shapes_by_iface = {}
-                for device in self.sim.devices:
-                    device_serial = getattr(device, "__serial_id")
-                    print(f"LOAD DEVICE: {device_serial}")
-                    device_shape_data = ui_data.get("devices", {}).get(
-                        device_serial,
-                        {},
+                device_shape = self.viewPort.add_device(
+                    device,
+                    device_shape_data.get("x"),
+                    device_shape_data.get("y"),
+                )
+                for iface in device.ifaces:
+                    device_shapes_by_iface[getattr(iface, "__serial_id")] = (
+                        device_shape
                     )
-                    device_shape = self.viewPort.add_device(
-                        device,
-                        device_shape_data.get("x"),
-                        device_shape_data.get("y"),
-                    )
-                    for iface in device.ifaces:
-                        device_shapes_by_iface[
-                            getattr(iface, "__serial_id")
-                        ] = device_shape
-                for cable in self.sim.cables:
-                    iface_a_serial = getattr(cable.a, "__serial_id")
-                    iface_b_serial = getattr(cable.b, "__serial_id")
-                    print(f"LOAD CABLE: {iface_a_serial} -> {iface_b_serial}")
-                    cable_shape = CableShape(
-                        cable,
-                        self.viewPort,
-                        device_shapes_by_iface[iface_a_serial],
-                        device_shapes_by_iface[iface_b_serial],
-                    )
-                    cable_shape.draw_packets()
-                    self.viewPort.cables.append(cable_shape)
+            for cable in self.sim.cables:
+                iface_a_serial = getattr(cable.a, "__serial_id")
+                iface_b_serial = getattr(cable.b, "__serial_id")
+                print(f"LOAD CABLE: {iface_a_serial} -> {iface_b_serial}")
+                cable_shape = CableShape(
+                    cable,
+                    self.viewPort,
+                    device_shapes_by_iface[iface_a_serial],
+                    device_shapes_by_iface[iface_b_serial],
+                )
+                cable_shape.draw_packets()
+                self.viewPort.cables.append(cable_shape)
 
         except Exception as e:
             traceback.print_exc()
