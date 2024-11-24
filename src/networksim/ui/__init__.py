@@ -53,7 +53,10 @@ class NetworkSimUI(tk.Frame):
         filemenu.add_command(label="Quit", command=self.quit)
 
         debugmenu = tk.Menu(menubar, tearoff=0)
-        debugmenu.add_command(label="SHOW", command=self.sim.show)
+        debugmenu.add_command(
+            label="Print State (show())",
+            command=self.sim.show,
+        )
 
         menubar.add_cascade(label="File", menu=filemenu)
         menubar.add_cascade(label="Debug", menu=debugmenu)
