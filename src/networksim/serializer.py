@@ -3,6 +3,7 @@ import inspect
 from collections import namedtuple
 from uuid import uuid4
 
+from networksim.application import Application
 from networksim.hardware.cable import Cable
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
@@ -22,6 +23,7 @@ default_ref_types = (
     Cable,
     Packet,
     Payload,
+    Application,
 )
 raw_types = (int, str, float, type(None))
 
@@ -191,9 +193,7 @@ def deserialize(value, context=None):  # noqa: C901
             v, context = deserialize(v, context=context)
             positional_params[k] = v
 
-        inst = type(cls.__name__, (cls,), {"__module__": module.__name__})(
-            **positional_params,
-        )
+        inst = cls(**positional_params)
 
         if "__serial_id" in value.get("properties", {}):
             # Add partial class to prevent infinite recursion
