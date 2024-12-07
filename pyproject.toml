@@ -1,3 +1,70 @@
+packages = ["networksim"]
+
+[tool.setuptools.package-data]
+networksim = []
+
+[project]
+# This is a unique identifier for your project, typically in the format <org_name>.<package_name>
+name = "networksim"
+version = "0.1.0"
+description = "Educational network simulator for learning networking protocols"
+readme = "README.md"  # Assuming you have a README.md file
+
+# SPDX license identifier. You can find a list of valid identifiers at https://spdx.org/licenses/
+license = {text = "GPLv3"}
+
+# Add your name and email address
+authors = [
+    {name = "Bryan Wyatt", email = "brwyatt@gmail.com"},
+]
+
+# Specify the minimum Python version required
+requires-python = ">=3.9"
+
+# Classify your project with PyPI trove classifiers
+# See https://pypi.org/classifiers/ for a complete list
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: System :: Networking",
+]
+
+# Dependencies
+dependencies = [
+    "setuptools>=50.0.0,<76.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/brwyatt/NetworkSim"
+"Bug Tracker" = "https://github.com/brwyatt/NetworkSim/issues"
+
+# Entry points for console scripts and plugins
+[project.entry-points."console_scripts"]
+networksim = "networksim.ui:start_ui"
+
+[project.entry-points."networksim_device_types"]
+Device = "networksim.hardware.device:Device"
+"IPDevices.IPDevice" = "networksim.hardware.device.ip.ipdevice:IPDevice"
+"IPDevices.Router" = "networksim.hardware.device.ip.router:Router"
+"Infrastructure.Router" = "networksim.hardware.device.infrastructure.router:Router"
+"Infrastructure.Switch" = "networksim.hardware.device.infrastructure.switch:Switch"
+
+[project.entry-points."networksim_applications"]
+Ping = "networksim.application.ping:Ping"
+"DHCP_Server" = "networksim.application.dhcp.server:DHCPServer"
+"DHCP_Client" = "networksim.application.dhcp.client:DHCPClient"
+
+[build-system]
+# These are the assumed build requirements if not specified
+requires = ["setuptools>=50.0.0,<76.0.0"]
+build-backend = "setuptools.build_meta"  # Specifies the backend to use for building the distribution
+
 [tool.black]
 line-length = 79
 include = '\.pyi?$'
