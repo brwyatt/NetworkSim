@@ -40,6 +40,14 @@ dependencies = [
     "setuptools>=50.0.0,<76.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ipython>=7.0.0,<9.0.0",
+    "pre-commit>=2.0.0,<4.0.0",
+    "pytest>=8.3.4,<9.0.0",
+    "tox>=4.23.2,<5.0.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/brwyatt/NetworkSim"
 "Bug Tracker" = "https://github.com/brwyatt/NetworkSim/issues"
