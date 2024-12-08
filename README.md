@@ -1,38 +1,36 @@
 # NetworkSim
 Educational Network Simulation Tool
 
+![](docs/assets/header.gif)
+
 ## Overview
-This project was started as a way to both learn and teach how networks work at the protocol level. As such, there are some "interesting" deviations from reality, particularly on the "physical" layer and time, it is a _simulation_, after all. No code in here should be considered "production quality", and should be expected to contain vulnerabilities that have been patched in real-world implementations (but these could be fun to "exploit" in the simulation).
+This project was started as a way to both learn and teach how networks work at the protocol level in a human-friendly time scale. As such, there are some "interesting" deviations from reality, particularly the "physical" layer and time, it is a _simulation_, after all. No code in here should be considered "production quality", and should be expected to contain vulnerabilities that have been patched in real-world implementations (but these could be fun to "exploit" in the simulation).
 
-## Limitations (Deviations from reality)
-* The time units analogue in the simulation are "steps".
-  * Cable lengths are measured in the number of "steps" for packets to taverse the length of the cable
-  * Interface buffers are based on the number of "steps" worth of packets that can be stored (relative to their bandwidth)
-* Cables (Physical layer oddities)
-  * These decisions were made in order to make it easy to simulate/control and keep the focus on the higher level protocols, and the actual implementation here actually doesn't matter, as the protocols are intended to be run over different physical layers, and do in the real world (2- or 4-pair copper CAT cables, Multi-/Single-Mode fiber, and encapsulated protocols such as GPON (fiber internet), DOCSIS (cable internet), and VPN)
-  * Unlike the real world, packets "exist" on the cable in discrete units (rather than conducting electical signals between ends)
-  * Cables are "active" in that they are actually the entity in the simulation pulling packets off of interface outbound buffers and placing them on interface inbound buffers, rather than just being a conduit for electrical signals or light transmitted from the interface and received on the other end.
-  * the "bandwidth" is the number of packets per "step" along the cable. This would be most analagous to the higher frequency of CAT cables that higher-rated cables (and interfaces) use to achieve higher bandwidth.
-* Packets are the fundamental unit
-  * Unlike the real world, packets are transmitted as a single discrete unit, irrelevant of size.
-  * Packets are also structured Python objects, for ease of inspection and exploration/understanding of protocols, rather than being raw binary data. The idea is to teach "IP Packets are encapsulated in an Ethernet packet have a source and destination IP address" rather than "these x bytes of the IP data frame portion of the packet contains y data".
-* Device packet processing
-  * By default, devices are configured to be able to read the combined bandwidth of all interfaces every step. This will, by default, ensure the inbound buffers can never fill. This can be tweaked to slow the processing of packets to allow for "overwhelming" a host and dropping packets.
-    * On switches, this default can easily lead to overflowing of outbound buffers on popular destination interfaces, unless those are manually increased.
-    * For simplicity, "applications" listening on a host, can process and respond to a packet (or multiple packets) within the same step, without any kind of time delay for processing like the real world would normally see.
+## Installing
 
-## TODO
-Known missing things that might get implemented
+```
+python3 -m venv networksim
+source networksim/bin/activate
+pip install git+https://github.com/brwyatt/NetworkSim.git#egg=networksim
+```
 
-* ICMP Error messages - Currently missing, both generating/sending and processing received errors
-* TCP - Requires a bit more tracking, still making sure the basics are all worked out
-* VLANs - May require some rework of some parts to support, but likely worth implementing as the concepts are pretty useful
-* (R)STP - Might be out of scope. Lets be honest, though, if you know what this is, this really isn't for you anyway. 😉
-* Interface bonding and LACP - might be fun, might also be out of scope (at least short-term)
+## Basic Usage (GUI)
 
-## Basic Usage
+The GUI can be launched (after install, within the virtual env) with `networksim`. This will launch a blank simulation environment.
 
-Note: This section is intended to be used as a quick "how to use the simulator", and will be light on explaining networking concepts.
+Devices can be added to the simulation from the panel on the left, and are grouped into collapsable sections.
+
+![](docs/assets/device_panel.png)
+
+The panel at the bottom contain the simulation contols and show the current step count of the simulation and controls for moving the simulation forward, as well as a button to reset the view pane.
+
+![](docs/assets/sim_controls.png)
+
+
+
+## Advanced Usage (Python)
+
+Note: This section is intended to be used as a quick "how to use the simulator in Python", and will be light on explaining networking concepts.
 
 Start by either running Python interactively or (preferred) installing and running iPython to get an interactive shell to run the simulation.
 
@@ -110,24 +108,30 @@ The list of all devices in the simulation can be accessed with:
 sim.devices
 ```
 
-## Additional devices
-In addition to `Device`s and `Switch`es, there are also:
+### Loading examples
 
-* `IPDevice`
-  * Basic network device with an IP stack, supports IP networking.
-  * Import:
-    * ```
-      from networksim.hardware.device.ip.ipdevice import IPDevice
-      ```
-* `Router`
-  * Comes with an IP stack and can move packets between IP networks
-  * Imports (both are equivelant):
-    * ```
-      from networksim.hardware.device.ip.router import Router
-      ```
-    * ```
-      from networksim.hardware.device.infrastructure.router import Router
-      ```
+Examples from the examples directory are JSON (.nsj) or gzip-compressed JSON (.nsj.gz) data files and can be read using the `gzip` and `json` libraries, then de-serialized by passing the resulting dictionary to `Simulation.deserialize(data)`.
+
+For example:
+
+```python
+import gzip
+import json
+
+from networksim.simulation import Simulation
+
+
+file_path = "./examples/SimpleRoutedNetwork.nsj"
+
+with open(file_path, "rb") as file:
+    data = file.read()
+
+if file_path.endswith(".gz"):
+    data = gzip.decompress(data)
+data = json.loads(data.decode())
+
+sim = Simulation.deserialize(data)
+```
 
 ## Tutorials/Lessons
 (These are still a WIP)
@@ -158,7 +162,10 @@ from networksim.examples.tier3_network import sim
 ```
 
 ### Routing
-Creates two networks connected with a router. Each network has a switch, a DHCP server, and 2 clients.
+
+File: `./examples/SimpleRouting.nsj`
+
+Creates two networks connected with a router. Each network has a switch, a DHCP server, and 5 clients.
 
 ```
          Router
@@ -168,8 +175,28 @@ Creates two networks connected with a router. Each network has a switch, a DHCP 
 DHCP  A1 A2  B1 B2  DHCP
 ```
 
-To use and play with this network:
+## Limitations (Deviations from reality)
+* The time units analogue in the simulation are "steps".
+  * Cable lengths are measured in the number of "steps" for packets to taverse the length of the cable
+  * Interface buffers are based on the number of "steps" worth of packets that can be stored (relative to their bandwidth)
+* Cables (Physical layer oddities)
+  * These decisions were made in order to make it easy to simulate/control and keep the focus on the higher level protocols, and the actual implementation here actually doesn't matter, as the protocols are intended to be run over different physical layers, and do in the real world (2- or 4-pair copper CAT cables, Multi-/Single-Mode fiber, and encapsulated protocols such as GPON (fiber internet), DOCSIS (cable internet), and VPN)
+  * Unlike the real world, packets "exist" on the cable in discrete units (rather than conducting electical signals between ends)
+  * Cables are "active" in that they are actually the entity in the simulation pulling packets off of interface outbound buffers and placing them on interface inbound buffers, rather than just being a conduit for electrical signals or light transmitted from the interface and received on the other end.
+  * the "bandwidth" is the number of packets per "step" along the cable. This would be most analagous to the higher frequency of CAT cables that higher-rated cables (and interfaces) use to achieve higher bandwidth.
+* Packets are the fundamental unit
+  * Unlike the real world, packets are transmitted as a single discrete unit, irrelevant of size.
+  * Packets are also structured Python objects, for ease of inspection and exploration/understanding of protocols, rather than being raw binary data. The idea is to teach "IP Packets are encapsulated in an Ethernet packet have a source and destination IP address" rather than "these x bytes of the IP data frame portion of the packet contains y data".
+* Device packet processing
+  * By default, devices are configured to be able to read the combined bandwidth of all interfaces every step. This will, by default, ensure the inbound buffers can never fill. This can be tweaked to slow the processing of packets to allow for "overwhelming" a host and dropping packets.
+    * On switches, this default can easily lead to overflowing of outbound buffers on popular destination interfaces, unless those are manually increased.
+    * For simplicity, "applications" listening on a host, can process and respond to a packet (or multiple packets) within the same step, without any kind of time delay for processing like the real world would normally see.
 
-```
-from networksim.examples.simple_routing import sim
-```
+## TODO
+Known missing things that might get implemented
+
+* ICMP Error messages - Currently missing, both generating/sending and processing received errors
+* TCP - Requires a bit more tracking, still making sure the basics are all worked out
+* VLANs - May require some rework of some parts to support, but likely worth implementing as the concepts are pretty useful
+* (R)STP - Might be out of scope. Lets be honest, though, if you know what this is, this really isn't for you anyway. 😉
+* Interface bonding and LACP - might be fun, might also be out of scope (at least short-term)
