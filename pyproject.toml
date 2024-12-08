@@ -19,7 +19,7 @@ authors = [
 ]
 
 # Specify the minimum Python version required
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 # Classify your project with PyPI trove classifiers
 # See https://pypi.org/classifiers/ for a complete list
