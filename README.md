@@ -26,7 +26,26 @@ The panel at the bottom contain the simulation contols and show the current step
 
 ![](docs/assets/sim_controls.png)
 
+Clicking on a device type on the left panel will open a device creation window, where default options can be changed or optional information can be provided. For example, this can be used to change the number and properties of interfaces a device has, its name, and how fast it is able to process packets.
 
+![](docs/assets/device_create.png)
+
+Once there are two more more devices (for example, a device and a switch), they can be connected by right-clicking one of them, selecting an interface from the interface menu, and clicking the "Connect" option to enter connection mode.
+
+![](docs/assets/device_connect_a.png)
+
+When in connection mode, click another device to select one of it's available interfaces to connect to.
+
+![](docs/assets/device_connect_b.png)
+
+A cable creation dialog window will open where you can change the characteristics of the cable.
+
+![](docs/assets/cable_create.png)
+
+Note that the connection between devices will use the smallest properties of the connected interfaces AND the cable. If the interfaces on the devices have a bandwidth of 10, but the cable only has a bandwidth of 1, the connection will be limited to a bandwidth of 1.
+The "length" determines how many "steps" in the simulation it takes packets to travel between interfaces.
+
+Once connected, packets can be sent via the interface menu, and packets traveling along a cable can be clicked on to inspect their contents. Devices can also be disconnected by right-clicking the cable connecting them and clicking "delete".
 
 ## Advanced Usage (Python)
 
