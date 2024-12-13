@@ -4,9 +4,10 @@ from typing import Optional
 
 from networksim.hwid import HWID
 from networksim.ipaddr import IPAddr
+from networksim.packet.payload import Payload
 
 
-class DHCPPayload:
+class DHCPPayload(Payload):
     def __init__(
         self,
         client_ip: Optional[IPAddr] = None,
@@ -28,25 +29,100 @@ class DHCPPayload:
 
 
 class DHCPDiscover(DHCPPayload):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        client_ip: Optional[IPAddr] = None,
+        your_ip: Optional[IPAddr] = None,
+        server_ip: Optional[IPAddr] = None,
+        gateway_ip: Optional[IPAddr] = None,
+        client_hwid: Optional[HWID] = None,
+        options: Optional[Dict[int, Any]] = None,
+    ):
+        super().__init__(
+            client_ip,
+            your_ip,
+            server_ip,
+            gateway_ip,
+            client_hwid,
+            options,
+        )
 
 
 class DHCPOffer(DHCPPayload):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        client_ip: Optional[IPAddr] = None,
+        your_ip: Optional[IPAddr] = None,
+        server_ip: Optional[IPAddr] = None,
+        gateway_ip: Optional[IPAddr] = None,
+        client_hwid: Optional[HWID] = None,
+        options: Optional[Dict[int, Any]] = None,
+    ):
+        super().__init__(
+            client_ip,
+            your_ip,
+            server_ip,
+            gateway_ip,
+            client_hwid,
+            options,
+        )
 
 
 class DHCPRequest(DHCPPayload):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        client_ip: Optional[IPAddr] = None,
+        your_ip: Optional[IPAddr] = None,
+        server_ip: Optional[IPAddr] = None,
+        gateway_ip: Optional[IPAddr] = None,
+        client_hwid: Optional[HWID] = None,
+        options: Optional[Dict[int, Any]] = None,
+    ):
+        super().__init__(
+            client_ip,
+            your_ip,
+            server_ip,
+            gateway_ip,
+            client_hwid,
+            options,
+        )
 
 
 class DHCPAck(DHCPPayload):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        client_ip: Optional[IPAddr] = None,
+        your_ip: Optional[IPAddr] = None,
+        server_ip: Optional[IPAddr] = None,
+        gateway_ip: Optional[IPAddr] = None,
+        client_hwid: Optional[HWID] = None,
+        options: Optional[Dict[int, Any]] = None,
+    ):
+        super().__init__(
+            client_ip,
+            your_ip,
+            server_ip,
+            gateway_ip,
+            client_hwid,
+            options,
+        )
 
 
 class DHCPNack(DHCPPayload):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        client_ip: Optional[IPAddr] = None,
+        your_ip: Optional[IPAddr] = None,
+        server_ip: Optional[IPAddr] = None,
+        gateway_ip: Optional[IPAddr] = None,
+        client_hwid: Optional[HWID] = None,
+        options: Optional[Dict[int, Any]] = None,
+    ):
+        super().__init__(
+            client_ip,
+            your_ip,
+            server_ip,
+            gateway_ip,
+            client_hwid,
+            options,
+        )

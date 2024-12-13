@@ -55,18 +55,20 @@ class CAMTable:
 
 
 class Switch(Device):
+    default_iface_count = 4
+
     def __init__(
         self,
         name: Optional[str] = None,
-        iface_count: int = 4,
+        ifaces: Optional[List[Interface]] = None,
         cam_expire: int = 200,
-        forward_capacity: Optional[int] = None,
+        process_rate: Optional[int] = None,
     ):
         super().__init__(
             name=name,
-            iface_count=iface_count,
+            ifaces=ifaces,
             auto_process=True,
-            process_rate=forward_capacity,
+            process_rate=process_rate,
         )
         self.CAM = CAMTable(expiration=cam_expire)
 

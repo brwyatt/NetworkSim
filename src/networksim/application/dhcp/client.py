@@ -1,4 +1,5 @@
 from typing import List
+from typing import Optional
 
 import networksim.application.dhcp.payload as payload
 from networksim.application import Application
@@ -24,7 +25,7 @@ class DHCPClient(Application):
         self,
         device: Device,
         *args,
-        ifaces: List[Interface] = None,
+        ifaces: Optional[List[Interface]] = None,
         **kwargs,
     ):
         super().__init__(device, *args, **kwargs)
@@ -81,6 +82,8 @@ class DHCPClient(Application):
         return self.leases[iface]
 
     def step(self):
+        super().step()
+
         for arp, expire in list(self.arp_requests.items()):
             self.arp_requests[arp] = expire - 1
             if expire <= 0:
@@ -138,7 +141,9 @@ class DHCPClient(Application):
                 if lease["server"] is not None:
                     options[54] = lease["server"]
 
-                self.log.append(f"Sending DHCPRequest ({lease['state']})")
+                self.log.append(
+                    f"{self.step_count}: Sending DHCPRequest for {lease['bind'].addr} ({lease['state']})",
+                )
                 iface.send(
                     EthernetPacket(
                         dst=HWID.broadcast(),
@@ -166,7 +171,9 @@ class DHCPClient(Application):
                     # Request last IP, if available
                     options[50] = lease["bind"].addr
 
-                self.log.append(f"Sending DHCPDiscover ({lease['state']})")
+                self.log.append(
+                    f"{self.step_count}: Sending DHCPDiscover ({lease['state']})",
+                )
                 iface.send(
                     EthernetPacket(
                         dst=HWID.broadcast(),
@@ -203,7 +210,9 @@ class DHCPClient(Application):
                         self.device.ip.send_arp_request(lease["server"])
                     continue
 
-                self.log.append(f"Sending DHCPRequest ({lease['state']})")
+                self.log.append(
+                    f"{self.step_count}: Sending DHCPRequest for {lease['bind'].addr} ({lease['state']})",
+                )
                 iface.send(
                     EthernetPacket(
                         dst=dst_hwid,
@@ -231,34 +240,44 @@ class DHCPClient(Application):
         src: IPAddr,
         dst: IPAddr,
         iface: Interface,
+        hwsrc: Optional[HWID] = None,
+        hwdst: Optional[HWID] = None,
     ):
         if not isinstance(packet.payload, payload.DHCPPayload):
             self.log.append(
-                f"Received invalid packet payload {type(packet.payload)}",
+                f"{self.step_count} ({src}): Received invalid packet payload {type(packet.payload)}",
             )
             return
 
         lease = self.leases.get(iface)
         if lease is None:
             self.log.append(
-                "Received DCHP packet on interface we don't care about",
+                f"{self.step_count} ({src}): Received DCHP packet on interface we don't care about",
             )
             return
 
         if isinstance(packet.payload, payload.DHCPNack):
-            self.log.append(f"Received DHCPNack ({lease['state']})")
+            self.log.append(
+                f"{self.step_count} ({src}): Received DHCPNack for {dst} ({lease['state']})",
+            )
             if lease["state"] in ["INIT-REBOOT", "RENEWING", "REBINDING"]:
                 self.init_iface(iface)
             return
 
         if isinstance(packet.payload, payload.DHCPOffer):
-            self.log.append(f"Received DHCPOffer ({lease['state']})")
+            self.log.append(
+                f"{self.step_count} ({src}): Received DHCPOffer for {packet.payload.your_ip} ({lease['state']})",
+            )
             if lease["state"] != "INIT":
-                self.log.append("Received DHCP OFFER when not in valid state")
+                self.log.append(
+                    f"{self.step_count} ({src}): Received DHCP OFFER when not in valid state",
+                )
                 return
 
             if packet.payload.client_hwid != iface.hwid:
-                self.log.append("Received DCHP OFFER not for us!")
+                self.log.append(
+                    f"{self.step_count} ({src}): Received DCHP OFFER not for us!",
+                )
                 return
 
             bind = IPBind(
@@ -294,18 +313,24 @@ class DHCPClient(Application):
             lease["nameservers"] = packet.payload.options.get(6)
 
         if isinstance(packet.payload, payload.DHCPAck):
-            self.log.append(f"Received DHCPAck ({lease['state']})")
+            self.log.append(
+                f"{self.step_count} ({src}): Received DHCPAck for {packet.payload.your_ip} ({lease['state']})",
+            )
             if lease["state"] not in [
                 "INIT-REBOOT",
                 "SELECTING",
                 "RENEWING",
                 "REBINDING",
             ]:
-                self.log.append("Received DHCP ACK when not in valid state")
+                self.log.append(
+                    f"{self.step_count} ({src}): Received DHCP ACK when not in valid state",
+                )
                 return
 
             if packet.payload.client_hwid != iface.hwid:
-                self.log.append("Received DCHP Ack not for us!")
+                self.log.append(
+                    f"{self.step_count} ({src}): Received DCHP Ack not for us!",
+                )
                 return
 
             bind = IPBind(
@@ -323,7 +348,7 @@ class DHCPClient(Application):
             if bind != lease["bind"]:
                 # Something is very wrong, the ACK we gont isn't for what we have or were offered!
                 self.log.append(
-                    "Received DHCP ACK that doesn't match previous OFFER or existing lease",
+                    f"{self.step_count} ({src}): Received DHCP ACK that doesn't match previous OFFER or existing lease",
                 )
                 return
 

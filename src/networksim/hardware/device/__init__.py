@@ -1,24 +1,30 @@
 import logging
-from collections import defaultdict
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 
 from networksim.hardware.interface import Interface
 from networksim.helpers import randbytes
 from networksim.hwid import HWID
 from networksim.packet import Packet
 
+if TYPE_CHECKING:
+    from networksim.application import Application
+
 
 logger = logging.getLogger(__name__)
 
 
 class Device:
+    default_iface_count = 1
+
     def __init__(
         self,
         name: Optional[str] = None,
-        iface_count: int = 1,
         auto_process: bool = False,
+        ifaces: Optional[List[Interface]] = None,
         process_rate: Optional[int] = None,
     ):
         self.base_MAC = randbytes(5)
@@ -26,12 +32,15 @@ class Device:
             name = f"{type(self).__name__}-{self.base_MAC.hex()}"
         self.name = name
         self.ifaces = []
-        self.connection_states = defaultdict(lambda: False)
+        self.connection_states = {}
         self.auto_process = auto_process
         self.time = 0
 
-        for x in range(1, iface_count + 1):
-            self.add_iface(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
+        if ifaces is None:
+            for x in range(1, self.default_iface_count + 1):
+                self.add_iface(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
+        else:
+            self.ifaces.extend(ifaces)
 
         # By default, be able to process combined full (max) line-rate
         self.process_rate = (
@@ -52,7 +61,7 @@ class Device:
 
     def check_connection_state_changes(self):
         for iface in self.ifaces:
-            if self.connection_states[iface] != iface.connected:
+            if self.connection_states.get(iface, False) != iface.connected:
                 # Connection state has changed!
                 self.connection_states[iface] = iface.connected
                 self.handle_connection_state_change(iface)

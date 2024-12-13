@@ -38,6 +38,14 @@ class HWID:
 
         self._bytes = value
 
+    @classmethod
+    def from_str(cls, hwid_str: str):
+        byte_value = bytes(
+            [int(x, 16).to_bytes(1, "big")[0] for x in hwid_str.split(":")],
+        )
+
+        return cls(byte_value)
+
     def __str__(self):
         return ":".join(format(x, "02x") for x in self.byte_value)
 

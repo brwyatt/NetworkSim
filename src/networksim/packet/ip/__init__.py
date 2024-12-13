@@ -1,8 +1,10 @@
 import logging
 from typing import Optional
+from typing import Union
 
 from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
+from networksim.packet.payload import Payload
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +16,7 @@ class IPPacket(Packet):
         dst: IPAddr,
         src: Optional[IPAddr] = None,
         ttl: Optional[int] = None,
-        payload: Optional = None,
+        payload: Optional[Union[Packet, Payload, str]] = None,
     ):
         if not isinstance(dst, IPAddr):
             raise TypeError(f"dst: expected `IPAddr` got `{type(dst)}`")

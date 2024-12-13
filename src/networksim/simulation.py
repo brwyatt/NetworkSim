@@ -9,9 +9,11 @@ class Simulation:
     def __init__(self):
         self.cables = []
         self.devices = []
+        self.step_count = 0
 
     def step(self, steps: int = 1):
         for _ in range(0, steps):
+            self.step_count += 1
             for x in self.cables + self.devices:
                 x.step()
 
@@ -52,9 +54,13 @@ class Simulation:
                     break
 
             if iface_a is None:
-                iface_a = str(cable.a.hwid)
+                iface_a = "Unconnected"
+                if cable.a is not None:
+                    iface_a = str(cable.a.hwid)
             if iface_b is None:
-                iface_b = str(cable.b.hwid)
+                iface_b = "Unconnected"
+                if cable.b is not None:
+                    iface_b = str(cable.b.hwid)
 
             print(
                 f" * {iface_a}/{iface_b}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
@@ -100,6 +106,30 @@ class Simulation:
         if device not in self.devices:
             self.devices.append(device)
 
+    def delete_device(self, device: Device, remove_cables: bool = True):
+        edited_cables = set()
+        # disconnect from cables from device
+        for cable in self.cables:
+            if cable.a in device.ifaces:
+                cable.a = None
+                edited_cables.add(cable)
+            if cable.b in device.ifaces:
+                cable.b = None
+                edited_cables.add(cable)
+
+        # remove device from simulation
+        if device in self.devices:
+            self.devices.remove(device)
+
+        if remove_cables:
+            for cable in edited_cables:
+                self.delete_cable(cable)
+
+    def delete_cable(self, cable: Cable):
+        cable.a = None
+        cable.b = None
+        self.cables.remove(cable)
+
     def add_cable(self, cable: Cable):
         if cable not in self.cables:
             self.cables.append(cable)
@@ -128,3 +158,20 @@ class Simulation:
         self.add_device(a)
         self.add_device(b)
         self.add_cable(cable)
+
+    @classmethod
+    def deserialize(cls, data):
+        from networksim.serializer import deserialize
+
+        obj, context = deserialize(data["simulation"], context=data["context"])
+
+        return obj
+
+    def serialize(self):
+        from networksim.serializer import serialize
+
+        data, context = serialize(self)
+        return {
+            "simulation": data,
+            "context": context,
+        }
