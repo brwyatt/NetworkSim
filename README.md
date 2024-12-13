@@ -141,6 +141,8 @@ sim = Simulation.deserialize(data)
 
 ## Example networks
 ### Tier-3 Network
+File: `./examples/Tier3Network.nsj`
+
 Creates a Core switch, 2 Aggregation switches connected to the core, 4 Access switches split between the Aggregation switches, a DHCP server (connected to an Aggregation switch with increased bandwidth), and 50 clients randomly connected to the Access switches.
 
 ```
@@ -153,12 +155,6 @@ Creates a Core switch, 2 Aggregation switches connected to the core, 4 Access sw
   Acc1    Acc2    Acc3    Acc4
  / | \   / | \   / | \   / | \
 A  B  C D  E  F G  H  I J  K  L
-```
-
-To use and play with this network:
-
-```
-from networksim.examples.tier3_network import sim
 ```
 
 ### Routing
