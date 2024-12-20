@@ -25,7 +25,7 @@ class Simulation:
                 print(
                     f"   * Iface[{x}]"
                     + (
-                        f" ({device[x].hwid})"
+                        f" ({device[x].macaddr})"
                         if not isinstance(device, Switch)
                         else ""
                     )
@@ -56,11 +56,11 @@ class Simulation:
             if iface_a is None:
                 iface_a = "Unconnected"
                 if cable.a is not None:
-                    iface_a = str(cable.a.hwid)
+                    iface_a = str(cable.a.macaddr)
             if iface_b is None:
                 iface_b = "Unconnected"
                 if cable.b is not None:
-                    iface_b = str(cable.b.hwid)
+                    iface_b = str(cable.b.macaddr)
 
             print(
                 f" * {iface_a}/{iface_b}: {[str(x) for x in cable.ab_transit]} | {[str(x) for x in cable.ba_transit]}",
@@ -74,7 +74,7 @@ class Simulation:
             print(f" * {device.name}")
             for x in range(0, len(device.ifaces)):
                 print(
-                    f"   * Iface[{x}]: {[str(x) for x in device.CAM.get_hwids_by_iface(device[x])]}",
+                    f"   * Iface[{x}]: {[str(x) for x in device.CAM.get_macaddrs_by_iface(device[x])]}",
                 )
 
     def print_arp_tables(self):
@@ -84,7 +84,7 @@ class Simulation:
                 continue
             print(f" * {device.name}")
             for x, y in device.ip.addr_table.table.items():
-                print(f"   * {x}: {y.hwid}")
+                print(f"   * {x}: {y.macaddr}")
 
     def print_route_tables(self):
         print("ROUTE TABLES:")

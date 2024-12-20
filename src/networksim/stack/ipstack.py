@@ -7,10 +7,10 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPNetwork
+from networksim.addr.macaddr import MACAddr
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
-from networksim.ipaddr import IPNetwork
 from networksim.packet import Packet
 from networksim.packet.arp import ARPPacket
 from networksim.packet.ethernet import EthernetPacket
@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 
 
 class ARPEntry:
-    def __init__(self, addr: IPAddr, hwid: HWID, expiration: int = 250):
+    def __init__(self, addr: IPAddr, macaddr: MACAddr, expiration: int = 250):
         self.addr = addr
-        self.hwid = hwid
+        self.macaddr = macaddr
         self.expiration = expiration
 
     def __eq__(self, other):
-        return (self.addr == other.addr) and (self.hwid == self.hwid)
+        return (self.addr == other.addr) and (self.macaddr == self.macaddr)
 
 
 class ARPTable:
@@ -41,8 +41,12 @@ class ARPTable:
         self.table = {}
         self.expiration = expiration
 
-    def add_entry(self, addr: IPAddr, hwid: HWID):
-        entry = ARPEntry(addr=addr, hwid=hwid, expiration=self.expiration)
+    def add_entry(self, addr: IPAddr, macaddr: MACAddr):
+        entry = ARPEntry(
+            addr=addr,
+            macaddr=macaddr,
+            expiration=self.expiration,
+        )
         self.table[entry.addr] = entry
 
     def expire(self):
@@ -62,7 +66,7 @@ class ARPTable:
     def lookup(self, addr: IPAddr):
         if addr not in self.table:
             return None
-        return self.table[addr].hwid
+        return self.table[addr].macaddr
 
 
 class Route:
@@ -90,7 +94,7 @@ class Route:
     def __str__(self):
         via = f" via {self.via}" if self.via is not None else ""
         src = f" src {self.src}" if self.src is not None else ""
-        return f"{self.network}{via} dev {self.iface.hwid}{src}"
+        return f"{self.network}{via} dev {self.iface.macaddr}{src}"
 
 
 class RouteTable:
@@ -286,11 +290,11 @@ class IPStack(Stack):
 
         route.iface.send(
             EthernetPacket(
-                dst=HWID.broadcast(),
-                src=route.iface.hwid,
+                dst=MACAddr.broadcast(),
+                src=route.iface.macaddr,
                 payload=ARPPacket(
                     dst_ip=addr,
-                    src=route.iface.hwid,
+                    src=route.iface.macaddr,
                     src_ip=route.src,
                     request=True,
                 ),
@@ -316,16 +320,16 @@ class IPStack(Stack):
                 logger.error(f"Could not find bound interface for {src}")
                 return
 
-        dst_hwid = self.addr_table.lookup(dst)
+        dst_macaddr = self.addr_table.lookup(dst)
 
         iface.send(
             EthernetPacket(
-                dst=dst_hwid,
-                src=iface.hwid,
+                dst=dst_macaddr,
+                src=iface.macaddr,
                 payload=ARPPacket(
-                    dst=dst_hwid,
+                    dst=dst_macaddr,
                     dst_ip=dst,
-                    src=iface.hwid,
+                    src=iface.macaddr,
                     src_ip=src,
                     request=False,
                 ),
@@ -346,11 +350,11 @@ class IPStack(Stack):
 
         iface.send(
             EthernetPacket(
-                dst=HWID.broadcast(),
-                src=iface.hwid,
+                dst=MACAddr.broadcast(),
+                src=iface.macaddr,
                 payload=ARPPacket(
                     dst_ip=addr,  # silly, but it is how it is defined
-                    src=iface.hwid,
+                    src=iface.macaddr,
                     src_ip=addr,
                     request=False,
                 ),
@@ -389,9 +393,9 @@ class IPStack(Stack):
 
         src = route.src if src is None else src
         iface = route.iface
-        dst_hwid = self.addr_table.lookup(next_hop)
+        dst_macaddr = self.addr_table.lookup(next_hop)
 
-        if dst_hwid is None:
+        if dst_macaddr is None:
             logger.error(
                 f"Unknown host {next_hop}! -- sending ARP and queing!",
             )
@@ -410,8 +414,8 @@ class IPStack(Stack):
 
         iface.send(
             EthernetPacket(
-                dst=dst_hwid,
-                src=iface.hwid,
+                dst=dst_macaddr,
+                src=iface.macaddr,
                 payload=IPPacket(
                     dst=dst,
                     src=src,
@@ -440,14 +444,14 @@ class IPStack(Stack):
                 iface,
             )
         ):
-            # Packet was received on the iface we expect for that network (if given), and we have a bound IP for that network on that iface. Basically, guards against packets on the wrong network/iface overwriting the HWID of an IP in the ARP table on another network/iface.
+            # Packet was received on the iface we expect for that network (if given), and we have a bound IP for that network on that iface. Basically, guards against packets on the wrong network/iface overwriting the MACAddr of an IP in the ARP table on another network/iface.
             return True
         return False
 
     def add_arp(
         self,
         src_ip: IPAddr,
-        src: HWID,
+        src: MACAddr,
         iface: Optional[Interface] = None,
     ):
         if self.local_source(src_ip, iface):
@@ -471,8 +475,8 @@ class IPStack(Stack):
     def process_arp(
         self,
         packet: ARPPacket,
-        src: Optional[HWID] = None,
-        dst: Optional[HWID] = None,
+        src: Optional[MACAddr] = None,
+        dst: Optional[MACAddr] = None,
         iface: Optional[Interface] = None,
     ):
         if packet.src is not None and packet.src_ip is not None:
@@ -498,8 +502,8 @@ class IPStack(Stack):
         src: IPAddr,
         dst: IPAddr,
         iface: Optional[Interface] = None,
-        hwsrc: Optional[HWID] = None,
-        hwdst: Optional[HWID] = None,
+        hwsrc: Optional[MACAddr] = None,
+        hwdst: Optional[MACAddr] = None,
     ):
         if isinstance(packet, ICMPPing):
             if not self.bound_ips.get_binds(addr=dst, iface=iface):
@@ -544,8 +548,8 @@ class IPStack(Stack):
         src: IPAddr,
         dst: IPAddr,
         iface: Optional[Interface] = None,
-        hwsrc: Optional[HWID] = None,
-        hwdst: Optional[HWID] = None,
+        hwsrc: Optional[MACAddr] = None,
+        hwdst: Optional[MACAddr] = None,
     ):
         callback = self.get_protocol_callback(
             UDP,
@@ -565,8 +569,8 @@ class IPStack(Stack):
     def process_packet(
         self,
         packet: Union[ARPPacket, IPPacket, UDP],
-        src: Optional[HWID] = None,
-        dst: Optional[HWID] = None,
+        src: Optional[MACAddr] = None,
+        dst: Optional[MACAddr] = None,
         iface: Optional[Interface] = None,
     ):
         if isinstance(packet, ARPPacket):

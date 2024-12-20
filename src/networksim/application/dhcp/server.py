@@ -3,12 +3,12 @@ from typing import List
 from typing import Optional
 
 import networksim.application.dhcp.payload as payload
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPNetwork
+from networksim.addr.macaddr import MACAddr
 from networksim.application import Application
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
-from networksim.ipaddr import IPNetwork
 from networksim.packet import Packet
 from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
@@ -16,16 +16,16 @@ from networksim.packet.ip.udp import UDP
 
 
 class DHCPLease:
-    def __init__(self, hwid: HWID, addr: IPAddr, expires: int = 500):
-        self.hwid = hwid
+    def __init__(self, macaddr: MACAddr, addr: IPAddr, expires: int = 500):
+        self.macaddr = macaddr
         self.addr = addr
         self.expires = expires
 
     def __eq__(self, other):
-        return self.addr == other.addr and self.hwid == other.hwid
+        return self.addr == other.addr and self.macaddr == other.macaddr
 
     def __hash__(self):
-        return hash((self.addr, self.hwid))
+        return hash((self.addr, self.macaddr))
 
 
 class DHCPServer(Application):
@@ -98,21 +98,25 @@ class DHCPServer(Application):
 
     def check_lease(
         self,
-        hwid: Optional[HWID] = None,
+        macaddr: Optional[MACAddr] = None,
         addr: Optional[IPAddr] = None,
     ):
         leases = [
             x
             for x in self.leases
-            if (hwid is None or x.hwid == hwid)
+            if (macaddr is None or x.macaddr == macaddr)
             and (addr is None or x.addr == addr)
         ]
         if len(leases) == 0:
             return None
         return leases[0]
 
-    def checkout(self, hwid: HWID, addr: Optional[IPAddr] = None) -> DHCPLease:
-        lease = self.check_lease(hwid, addr)
+    def checkout(
+        self,
+        macaddr: MACAddr,
+        addr: Optional[IPAddr] = None,
+    ) -> DHCPLease:
+        lease = self.check_lease(macaddr, addr)
         if lease is None:
             # No existing lease, only use provided addr if not in use (and provided)
             addr = (
@@ -120,7 +124,7 @@ class DHCPServer(Application):
                 if addr is not None and addr in self.pool
                 else choice(list(self.pool))
             )
-            lease = DHCPLease(hwid, addr, self.lease_time)
+            lease = DHCPLease(macaddr, addr, self.lease_time)
         lease.expires = self.lease_time
         self.leases.add(lease)
         try:
@@ -131,9 +135,9 @@ class DHCPServer(Application):
 
         return lease
 
-    def checkin(self, hwid, addr):
+    def checkin(self, macaddr, addr):
         try:
-            self.leases.remove(DHCPLease(hwid, addr, 0))
+            self.leases.remove(DHCPLease(macaddr, addr, 0))
         except KeyError:
             pass
 
@@ -160,7 +164,7 @@ class DHCPServer(Application):
 
         for x in list(self.leases):
             if x.expires == 0:
-                self.checkin(x.hwid, x.addr)
+                self.checkin(x.macaddr, x.addr)
                 continue
             x.expires -= 1
 
@@ -170,8 +174,8 @@ class DHCPServer(Application):
         src: IPAddr,
         dst: IPAddr,
         iface: Interface,
-        hwsrc: Optional[HWID] = None,
-        hwdst: Optional[HWID] = None,
+        hwsrc: Optional[MACAddr] = None,
+        hwdst: Optional[MACAddr] = None,
     ):
         if not isinstance(packet.payload, payload.DHCPPayload):
             self.log.append(
@@ -209,15 +213,15 @@ class DHCPServer(Application):
                 f"{self.step_count} ({hwsrc}): Received DHCPDiscover",
             )
             req_ip = packet.payload.options.get(50, None)
-            lease = self.checkout(packet.payload.client_hwid, req_ip)
+            lease = self.checkout(packet.payload.client_macaddr, req_ip)
 
             self.log.append(
                 f"{self.step_count} ({hwsrc}): Sending DHCPOffer ({lease.addr})",
             )
             iface.send(
                 EthernetPacket(
-                    dst=lease.hwid,
-                    src=iface.hwid,
+                    dst=lease.macaddr,
+                    src=iface.macaddr,
                     payload=IPPacket(
                         dst=lease.addr,
                         src=bind.addr,
@@ -227,7 +231,7 @@ class DHCPServer(Application):
                             payload=payload.DHCPOffer(
                                 your_ip=lease.addr,
                                 server_ip=bind.addr,
-                                client_hwid=lease.hwid,
+                                client_macaddr=lease.macaddr,
                                 options=options,
                             ),
                         ),
@@ -243,16 +247,16 @@ class DHCPServer(Application):
             server = packet.payload.options.get(54, packet.payload.server_ip)
             if server != bind.addr:
                 self.log.append(
-                    f"{self.step_count} ({hwsrc}): Client {packet.payload.client_hwid} "
+                    f"{self.step_count} ({hwsrc}): Client {packet.payload.client_macaddr} "
                     f"accepted offer from other DHCP server {server}, instead of ours!",
                 )
-                lease = self.check_lease(hwid=packet.payload.client_hwid)
+                lease = self.check_lease(macaddr=packet.payload.client_macaddr)
                 if lease is not None:
-                    self.checkin(hwid=lease.hwid, addr=lease.addr)
+                    self.checkin(macaddr=lease.macaddr, addr=lease.addr)
                 return
 
             lease = self.checkout(
-                hwid=packet.payload.client_hwid,
+                macaddr=packet.payload.client_macaddr,
                 addr=packet.payload.options.get(50, None),
             )
             if lease.addr != packet.payload.options.get(50, None):
@@ -261,17 +265,17 @@ class DHCPServer(Application):
                 self.log.append(
                     f"{self.step_count} ({hwsrc}): Unable to accept request for "
                     f"{packet.payload.options.get(50, None)} "
-                    f"from {packet.payload.client_hwid}",
+                    f"from {packet.payload.client_macaddr}",
                 )
-                self.checkin(hwid=lease.hwid, addr=lease.addr)
+                self.checkin(macaddr=lease.macaddr, addr=lease.addr)
                 # send a NACK
                 self.log.append(
                     f"{self.step_count} ({hwsrc}): Sending DHCPNack ({lease.addr})",
                 )
                 iface.send(
                     EthernetPacket(
-                        dst=lease.hwid,
-                        src=iface.hwid,
+                        dst=lease.macaddr,
+                        src=iface.macaddr,
                         payload=IPPacket(
                             dst=lease.addr,
                             src=bind.addr,
@@ -280,7 +284,7 @@ class DHCPServer(Application):
                                 src_port=67,
                                 payload=payload.DHCPNack(
                                     server_ip=bind.addr,
-                                    client_hwid=lease.hwid,
+                                    client_macaddr=lease.macaddr,
                                 ),
                             ),
                         ),
@@ -292,8 +296,8 @@ class DHCPServer(Application):
             )
             iface.send(
                 EthernetPacket(
-                    dst=lease.hwid,
-                    src=iface.hwid,
+                    dst=lease.macaddr,
+                    src=iface.macaddr,
                     payload=IPPacket(
                         dst=lease.addr,
                         src=bind.addr,
@@ -303,7 +307,7 @@ class DHCPServer(Application):
                             payload=payload.DHCPAck(
                                 your_ip=lease.addr,
                                 server_ip=bind.addr,
-                                client_hwid=lease.hwid,
+                                client_macaddr=lease.macaddr,
                                 options=options,
                             ),
                         ),

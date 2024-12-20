@@ -1,5 +1,6 @@
 import inspect
 import tkinter as tk
+import typing
 from enum import Enum
 from enum import EnumMeta as EnumType
 from typing import get_args
@@ -10,8 +11,9 @@ from typing import Tuple
 from typing import Type
 from typing import Union
 
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
+from networksim.addr import Addr
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.macaddr import MACAddr
 from networksim.packet import Packet
 from networksim.packet.payload import Payload
 from networksim.utils import get_all_subclasses
@@ -117,13 +119,18 @@ class IPAddrVar(tk.StringVar):
         return IPAddr.from_str(val)
 
 
-class HWIDVar(tk.StringVar):
+class MACAddrVar(tk.StringVar):
     def get(self, *args, **kwargs):
         val = super().get(*args, **kwargs)
-        return HWID.from_str(val)
+        return MACAddr.from_str(val)
 
 
-def get_var_fields(master, param_type, sticky="EW"):
+def get_var_fields(
+    master,
+    param_type,
+    sticky="EW",
+    skip_subclassbuilder=False,
+):
     if param_type in (str, bytes):
         var = tk.StringVar()
         field = tk.Entry(master, textvariable=var)
@@ -148,8 +155,8 @@ def get_var_fields(master, param_type, sticky="EW"):
     elif param_type is IPAddr:
         var = IPAddrVar()
         field = tk.Entry(master, textvariable=var)
-    elif param_type is HWID:
-        var = HWIDVar()
+    elif param_type is MACAddr:
+        var = MACAddrVar()
         field = tk.Entry(master, textvariable=var)
     elif get_origin(param_type) is list:
         var = field = ListBuilderFrame(master, cls=get_args(param_type)[0])
@@ -159,7 +166,7 @@ def get_var_fields(master, param_type, sticky="EW"):
             master,
             classes=args,
         )
-    elif param_type in [Packet, Payload]:
+    elif param_type in [Packet, Payload, Addr] and not skip_subclassbuilder:
         var = field = SelectSubclassBuilderFrame(master, base_class=param_type)
     elif isinstance(param_type, EnumType):
         var = field = EnumSelect(master, param_type)
@@ -334,17 +341,29 @@ class ObjectBuilderFrame(tk.Frame):
                     )
 
 
+def resolve_references(ref):
+    if isinstance(ref, typing.ForwardRef):
+        return ref._evaluate(globals(), locals(), frozenset())
+    return ref
+
+
 class SelectObjectBuilderFrame(tk.Frame):
     def __init__(
         self,
         master=None,
         *args,
         classes: Union[List[Type], List[Tuple[str, Type]]],
+        skip_subclassbuilder=False,
     ):
         super().__init__(master=master)
-        self.classes = dict(
-            [x if isinstance(x, tuple) else (x.__name__, x) for x in classes],
-        )
+        self.classes = {}
+        for x in classes:
+            if isinstance(x, tuple):
+                self.classes[x[0]] = x[1]
+            else:
+                x = resolve_references(x)
+                self.classes[x.__name__] = x
+        self.skip_subclassbuilder = skip_subclassbuilder
 
         self.build_fields()
 
@@ -372,6 +391,7 @@ class SelectObjectBuilderFrame(tk.Frame):
         self.object_var, self.object_frame, sticky = get_var_fields(
             self,
             self.classes[self.selected_type.get()],
+            skip_subclassbuilder=self.skip_subclassbuilder,
         )
         self.object_frame.grid(row=1, column=1, sticky=sticky)
 
@@ -411,4 +431,5 @@ class SelectSubclassBuilderFrame(SelectObjectBuilderFrame):
         super().__init__(
             master=master,
             classes=get_all_subclasses(base_class, named=True),
+            skip_subclassbuilder=True,
         )

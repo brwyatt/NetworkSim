@@ -3,6 +3,7 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
+from networksim.addr import Addr
 from networksim.packet.payload import Payload
 
 
@@ -12,8 +13,8 @@ logger = logging.getLogger(__name__)
 class Packet:
     def __init__(
         self,
-        dst: Any,
-        src: Any,
+        dst: Addr,
+        src: Addr,
         payload: Optional[Union["Packet", Payload]] = None,
     ):
         self.dst = dst

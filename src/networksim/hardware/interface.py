@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from networksim.hwid import HWID
+from networksim.addr.macaddr import MACAddr
 from networksim.packet.ethernet import EthernetPacket
 
 
@@ -15,12 +15,12 @@ class AlreadyConnectedException(Exception):
 class Interface:
     def __init__(
         self,
-        hwid: Optional[HWID] = None,
+        macaddr: Optional[MACAddr] = None,
         queue_length: int = 3,
         max_bandwidth: int = 1,
     ):
         self.connected = False
-        self.hwid = hwid
+        self.macaddr = macaddr
         self._queue_length = queue_length
         self.max_bandwidth = max_bandwidth
         self.inbound_queue = []
@@ -36,19 +36,19 @@ class Interface:
         return self._queue_length * self.bandwidth
 
     @property
-    def hwid(self) -> HWID:
-        return self._hwid
+    def macaddr(self) -> MACAddr:
+        return self._macaddr
 
-    @hwid.setter
-    def hwid(self, value: Optional[HWID]):
+    @macaddr.setter
+    def macaddr(self, value: Optional[MACAddr]):
         if value is None:
-            value = HWID()
-        elif type(value) is not HWID:
+            value = MACAddr()
+        elif type(value) is not MACAddr:
             raise TypeError(
-                f"hwid: expected `HWID`, received `{type(value)}`",
+                f"macaddr: expected `MACAddr`, received `{type(value)}`",
             )
 
-        self._hwid = value
+        self._macaddr = value
 
     def outbound_write(self, packet: EthernetPacket):
         if not self.connected:
@@ -69,7 +69,7 @@ class Interface:
             return None
 
         if packet.src is None:
-            packet.src = self.hwid
+            packet.src = self.macaddr
 
         return packet
 
@@ -112,4 +112,4 @@ class Interface:
         self.connected = False
 
     def __hash__(self):
-        return self.hwid.__hash__()
+        return self.macaddr.__hash__()

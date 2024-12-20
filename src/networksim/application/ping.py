@@ -2,11 +2,11 @@ from random import randint
 from typing import Dict
 from typing import Optional
 
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.macaddr import MACAddr
 from networksim.application import Application
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
 from networksim.packet.ip.icmp import ICMPPing
 from networksim.packet.ip.icmp import ICMPPong
@@ -77,8 +77,8 @@ class Ping(Application):
         src: IPAddr,
         dst: IPAddr,
         iface: Interface,
-        hwsrc: Optional[HWID] = None,
-        hwdst: Optional[HWID] = None,
+        hwsrc: Optional[MACAddr] = None,
+        hwdst: Optional[MACAddr] = None,
     ):
         self.log.append(
             f"{self.step_count}: {dst} recieved PONG from {src} seq={packet.sequence}: {self.step_count - packet.payload['time']}",

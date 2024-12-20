@@ -2,12 +2,12 @@ from typing import List
 from typing import Optional
 
 import networksim.application.dhcp.payload as payload
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPNetwork
+from networksim.addr.macaddr import MACAddr
 from networksim.application import Application
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
-from networksim.ipaddr import IPNetwork
 from networksim.packet import Packet
 from networksim.packet.ethernet import EthernetPacket
 from networksim.packet.ip import IPPacket
@@ -146,8 +146,8 @@ class DHCPClient(Application):
                 )
                 iface.send(
                     EthernetPacket(
-                        dst=HWID.broadcast(),
-                        src=iface.hwid,
+                        dst=MACAddr.broadcast(),
+                        src=iface.macaddr,
                         payload=IPPacket(
                             dst=IPAddr.broadcast(),
                             src=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
@@ -155,7 +155,7 @@ class DHCPClient(Application):
                                 dst_port=67,
                                 src_port=68,
                                 payload=payload.DHCPRequest(
-                                    client_hwid=iface.hwid,
+                                    client_macaddr=iface.macaddr,
                                     server_ip=lease["server"],
                                     options=options,
                                 ),
@@ -176,8 +176,8 @@ class DHCPClient(Application):
                 )
                 iface.send(
                     EthernetPacket(
-                        dst=HWID.broadcast(),
-                        src=iface.hwid,
+                        dst=MACAddr.broadcast(),
+                        src=iface.macaddr,
                         payload=IPPacket(
                             dst=IPAddr.broadcast(),
                             src=IPAddr(byte_value=bytes(IPAddr.length_bytes)),
@@ -185,7 +185,7 @@ class DHCPClient(Application):
                                 dst_port=67,
                                 src_port=68,
                                 payload=payload.DHCPDiscover(
-                                    client_hwid=iface.hwid,
+                                    client_macaddr=iface.macaddr,
                                     options=options,
                                 ),
                             ),
@@ -203,8 +203,8 @@ class DHCPClient(Application):
                 if lease["server"] is not None:
                     options[54] = lease["server"]
 
-                dst_hwid = self.device.ip.addr_table.lookup(lease["server"])
-                if dst_hwid is None:
+                dst_macaddr = self.device.ip.addr_table.lookup(lease["server"])
+                if dst_macaddr is None:
                     # send ARP request if we haven't already, then wait and try again
                     if self.arp_requests.get(lease["server"], 0) <= 0:
                         self.device.ip.send_arp_request(lease["server"])
@@ -215,8 +215,8 @@ class DHCPClient(Application):
                 )
                 iface.send(
                     EthernetPacket(
-                        dst=dst_hwid,
-                        src=iface.hwid,
+                        dst=dst_macaddr,
+                        src=iface.macaddr,
                         payload=IPPacket(
                             dst=lease["server"],
                             src=lease["bind"].addr,
@@ -224,7 +224,7 @@ class DHCPClient(Application):
                                 dst_port=67,
                                 src_port=68,
                                 payload=payload.DHCPRequest(
-                                    client_hwid=iface.hwid,
+                                    client_macaddr=iface.macaddr,
                                     server_ip=lease["server"],
                                     options=options,
                                 ),
@@ -240,8 +240,8 @@ class DHCPClient(Application):
         src: IPAddr,
         dst: IPAddr,
         iface: Interface,
-        hwsrc: Optional[HWID] = None,
-        hwdst: Optional[HWID] = None,
+        hwsrc: Optional[MACAddr] = None,
+        hwdst: Optional[MACAddr] = None,
     ):
         if not isinstance(packet.payload, payload.DHCPPayload):
             self.log.append(
@@ -274,7 +274,7 @@ class DHCPClient(Application):
                 )
                 return
 
-            if packet.payload.client_hwid != iface.hwid:
+            if packet.payload.client_macaddr != iface.macaddr:
                 self.log.append(
                     f"{self.step_count} ({src}): Received DCHP OFFER not for us!",
                 )
@@ -327,7 +327,7 @@ class DHCPClient(Application):
                 )
                 return
 
-            if packet.payload.client_hwid != iface.hwid:
+            if packet.payload.client_macaddr != iface.macaddr:
                 self.log.append(
                     f"{self.step_count} ({src}): Received DCHP Ack not for us!",
                 )

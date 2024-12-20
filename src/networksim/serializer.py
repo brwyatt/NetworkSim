@@ -3,12 +3,12 @@ import inspect
 from collections import namedtuple
 from uuid import uuid4
 
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.macaddr import MACAddr
 from networksim.application import Application
 from networksim.hardware.cable import Cable
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
 from networksim.packet.payload import Payload
 from networksim.simulation import Simulation
@@ -16,7 +16,7 @@ from networksim.simulation import Simulation
 
 default_ref_types = (
     IPAddr,
-    HWID,
+    MACAddr,
     Device,
     Simulation,
     Interface,

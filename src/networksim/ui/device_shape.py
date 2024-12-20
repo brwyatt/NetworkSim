@@ -10,10 +10,10 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 import pkg_resources
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPNetwork
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.ipaddr import IPAddr
-from networksim.ipaddr import IPNetwork
 from networksim.packet import Packet
 from networksim.packet.ethernet import EthernetPacket
 from networksim.ui.addwindow import AddWindow
@@ -177,7 +177,7 @@ class DeviceShape:
             if iface.connected:
                 continue
             iface_menu.add_command(
-                label=f"[{iface_num}] - {str(iface.hwid)} (Max Bandwidth: {iface.max_bandwidth} | Queue Length: {iface.queue_length})",
+                label=f"[{iface_num}] - {str(iface.macaddr)} (Max Bandwidth: {iface.max_bandwidth} | Queue Length: {iface.queue_length})",
                 command=handler_generator(iface),
             )
 
@@ -297,8 +297,8 @@ class DeviceShape:
                         menu=binds_menu,
                     )
                 iface_menu.add_command(
-                    label="Copy HWID",
-                    command=self.get_copy_handler(iface.hwid),
+                    label="Copy MACAddr",
+                    command=self.get_copy_handler(iface.macaddr),
                 )
                 iface_menu.add_command(
                     label="Send Packet",
@@ -338,7 +338,7 @@ class DeviceShape:
                     menu=rec_queue_menu,
                 )
             ifaces_menu.add_cascade(
-                label=f"[{iface_num}] - {str(iface.hwid)}",
+                label=f"[{iface_num}] - {str(iface.macaddr)}",
                 menu=iface_menu,
             )
 
@@ -457,7 +457,7 @@ class DeviceShape:
 
     @property
     def iface_enum(self):
-        return Enum("iface", {f"[{self.device.ifaces.index(iface)}] {iface.hwid}": iface for iface in self.device.ifaces})  # type: ignore
+        return Enum("iface", {f"[{self.device.ifaces.index(iface)}] {iface.macaddr}": iface for iface in self.device.ifaces})  # type: ignore
 
     def add_route(self):
         _route_bind = self.get_dataclass_for_function(
@@ -554,7 +554,7 @@ class DeviceShape:
                 bind_menu.add_command(label=f"via: {bind.via}")
             if bind.src:
                 bind_menu.add_command(label=f"src: {bind.src}")
-            bind_menu.add_command(label=f"dev: {bind.iface.hwid}")
+            bind_menu.add_command(label=f"dev: {bind.iface.macaddr}")
             bind_menu.add_command(
                 label="Delete Route",
                 command=self.get_delete_route_handler(bind),
@@ -574,9 +574,9 @@ class DeviceShape:
         for arp_entry in self.device.ip.addr_table.table.values():
             entry_menu = tk.Menu(arp_menu, tearoff=0)
 
-            hwid_menu = tk.Menu(entry_menu, tearoff=0)
-            hwid_menu.add_command(label=arp_entry.hwid)
-            entry_menu.add_cascade(label="HWID", menu=hwid_menu)
+            macaddr_menu = tk.Menu(entry_menu, tearoff=0)
+            macaddr_menu.add_command(label=arp_entry.macaddr)
+            entry_menu.add_cascade(label="MACAddr", menu=macaddr_menu)
 
             expiration_menu = tk.Menu(entry_menu, tearoff=0)
             expiration_menu.add_command(label=arp_entry.expiration)
@@ -621,11 +621,11 @@ class DeviceShape:
             for cam_entry in self.device.CAM.table.values():
                 entry_menu = tk.Menu(cam_menu, tearoff=0)
 
-                hwid_menu = tk.Menu(entry_menu, tearoff=0)
-                hwid_menu.add_command(
-                    label=f"[{self.device.ifaces.index(cam_entry.iface)}] {cam_entry.iface.hwid}",
+                macaddr_menu = tk.Menu(entry_menu, tearoff=0)
+                macaddr_menu.add_command(
+                    label=f"[{self.device.ifaces.index(cam_entry.iface)}] {cam_entry.iface.macaddr}",
                 )
-                entry_menu.add_cascade(label="Interface", menu=hwid_menu)
+                entry_menu.add_cascade(label="Interface", menu=macaddr_menu)
 
                 expiration_menu = tk.Menu(entry_menu, tearoff=0)
                 expiration_menu.add_command(label=cam_entry.expiration)
@@ -634,7 +634,7 @@ class DeviceShape:
                     menu=expiration_menu,
                 )
 
-                cam_menu.add_cascade(label=cam_entry.hwid, menu=entry_menu)
+                cam_menu.add_cascade(label=cam_entry.macaddr, menu=entry_menu)
             menu.add_cascade(label="CAM Entries", menu=cam_menu)
 
         menu.post(event.x_root, event.y_root)

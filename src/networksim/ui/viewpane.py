@@ -155,7 +155,7 @@ class ViewPane(tk.Canvas):
         return shape
 
     def start_connect(self, device: DeviceShape, iface: Interface):
-        print(f"Starting connect: {device.device.name} - {iface.hwid}")
+        print(f"Starting connect: {device.device.name} - {iface.macaddr}")
         self.connect_start = (device, iface)
         self.draw_cable = CableDrawShape(self, device)
 
@@ -165,7 +165,7 @@ class ViewPane(tk.Canvas):
             self.draw_cable = None
 
     def select_connect_end(self, device: DeviceShape, iface: Interface):
-        print(f"Connecting to: {device.device.name} - {iface.hwid}")
+        print(f"Connecting to: {device.device.name} - {iface.macaddr}")
         AddWindow(
             self,
             cls=Cable,
@@ -191,7 +191,7 @@ class ViewPane(tk.Canvas):
                 cable.b = None
                 ErrorWindow(
                     self,
-                    text=f"One or more ports already connected:\n* {a[0].device.name} - {a[1].hwid}\n* {b[0].device.name} - {b[1].hwid}",
+                    text=f"One or more ports already connected:\n* {a[0].device.name} - {a[1].macaddr}\n* {b[0].device.name} - {b[1].macaddr}",
                 )
                 return
             finally:

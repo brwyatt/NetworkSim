@@ -2,8 +2,8 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.macaddr import MACAddr
 from networksim.packet.payload import Payload
 
 
@@ -14,14 +14,14 @@ class DHCPPayload(Payload):
         your_ip: Optional[IPAddr] = None,
         server_ip: Optional[IPAddr] = None,
         gateway_ip: Optional[IPAddr] = None,
-        client_hwid: Optional[HWID] = None,
+        client_macaddr: Optional[MACAddr] = None,
         options: Optional[Dict[int, Any]] = None,
     ):
         self.client_ip = client_ip
         self.your_ip = your_ip
         self.server_ip = server_ip
         self.gateway_ip = gateway_ip
-        self.client_hwid = client_hwid
+        self.client_macaddr = client_macaddr
 
         if options is None:
             options = {}
@@ -35,7 +35,7 @@ class DHCPDiscover(DHCPPayload):
         your_ip: Optional[IPAddr] = None,
         server_ip: Optional[IPAddr] = None,
         gateway_ip: Optional[IPAddr] = None,
-        client_hwid: Optional[HWID] = None,
+        client_macaddr: Optional[MACAddr] = None,
         options: Optional[Dict[int, Any]] = None,
     ):
         super().__init__(
@@ -43,7 +43,7 @@ class DHCPDiscover(DHCPPayload):
             your_ip,
             server_ip,
             gateway_ip,
-            client_hwid,
+            client_macaddr,
             options,
         )
 
@@ -55,7 +55,7 @@ class DHCPOffer(DHCPPayload):
         your_ip: Optional[IPAddr] = None,
         server_ip: Optional[IPAddr] = None,
         gateway_ip: Optional[IPAddr] = None,
-        client_hwid: Optional[HWID] = None,
+        client_macaddr: Optional[MACAddr] = None,
         options: Optional[Dict[int, Any]] = None,
     ):
         super().__init__(
@@ -63,7 +63,7 @@ class DHCPOffer(DHCPPayload):
             your_ip,
             server_ip,
             gateway_ip,
-            client_hwid,
+            client_macaddr,
             options,
         )
 
@@ -75,7 +75,7 @@ class DHCPRequest(DHCPPayload):
         your_ip: Optional[IPAddr] = None,
         server_ip: Optional[IPAddr] = None,
         gateway_ip: Optional[IPAddr] = None,
-        client_hwid: Optional[HWID] = None,
+        client_macaddr: Optional[MACAddr] = None,
         options: Optional[Dict[int, Any]] = None,
     ):
         super().__init__(
@@ -83,7 +83,7 @@ class DHCPRequest(DHCPPayload):
             your_ip,
             server_ip,
             gateway_ip,
-            client_hwid,
+            client_macaddr,
             options,
         )
 
@@ -95,7 +95,7 @@ class DHCPAck(DHCPPayload):
         your_ip: Optional[IPAddr] = None,
         server_ip: Optional[IPAddr] = None,
         gateway_ip: Optional[IPAddr] = None,
-        client_hwid: Optional[HWID] = None,
+        client_macaddr: Optional[MACAddr] = None,
         options: Optional[Dict[int, Any]] = None,
     ):
         super().__init__(
@@ -103,7 +103,7 @@ class DHCPAck(DHCPPayload):
             your_ip,
             server_ip,
             gateway_ip,
-            client_hwid,
+            client_macaddr,
             options,
         )
 
@@ -115,7 +115,7 @@ class DHCPNack(DHCPPayload):
         your_ip: Optional[IPAddr] = None,
         server_ip: Optional[IPAddr] = None,
         gateway_ip: Optional[IPAddr] = None,
-        client_hwid: Optional[HWID] = None,
+        client_macaddr: Optional[MACAddr] = None,
         options: Optional[Dict[int, Any]] = None,
     ):
         super().__init__(
@@ -123,6 +123,6 @@ class DHCPNack(DHCPPayload):
             your_ip,
             server_ip,
             gateway_ip,
-            client_hwid,
+            client_macaddr,
             options,
         )

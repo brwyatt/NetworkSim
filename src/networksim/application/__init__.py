@@ -1,10 +1,10 @@
 from typing import List
 from typing import Optional
 
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.macaddr import MACAddr
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
 from networksim.packet import Packet
 
 
@@ -29,7 +29,7 @@ class Application:
         src: IPAddr,
         dst: IPAddr,
         iface: Interface,
-        hwsrc: Optional[HWID] = None,
-        hwdst: Optional[HWID] = None,
+        hwsrc: Optional[MACAddr] = None,
+        hwdst: Optional[MACAddr] = None,
     ):
         pass

@@ -7,8 +7,10 @@ from networksim.helpers import randbytes
 logger = logging.getLogger(__name__)
 
 
-class HWID:
+class Addr:
     length_bytes = 6
+    separator = ":"
+    base = 16
 
     def __init__(self, byte_value: Optional[bytes] = None):
         self.byte_value = byte_value
@@ -39,15 +41,15 @@ class HWID:
         self._bytes = value
 
     @classmethod
-    def from_str(cls, hwid_str: str):
+    def from_str(cls, macaddr_str: str):
         byte_value = bytes(
-            [int(x, 16).to_bytes(1, "big")[0] for x in hwid_str.split(":")],
+            [
+                int(x, cls.base).to_bytes(1, "big")[0]
+                for x in macaddr_str.split(cls.separator)
+            ],
         )
 
         return cls(byte_value)
-
-    def __str__(self):
-        return ":".join(format(x, "02x") for x in self.byte_value)
 
     @classmethod
     def broadcast(cls):
@@ -57,8 +59,8 @@ class HWID:
             )
         return cls._broadcast
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.byte_value == other.byte_value
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return int.from_bytes(self.byte_value, "big")

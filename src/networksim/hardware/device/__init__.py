@@ -5,9 +5,9 @@ from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
 
+from networksim.addr.macaddr import MACAddr
 from networksim.hardware.interface import Interface
 from networksim.helpers import randbytes
-from networksim.hwid import HWID
 from networksim.packet import Packet
 
 if TYPE_CHECKING:
@@ -38,7 +38,9 @@ class Device:
 
         if ifaces is None:
             for x in range(1, self.default_iface_count + 1):
-                self.add_iface(HWID(self.base_MAC + int.to_bytes(x, 1, "big")))
+                self.add_iface(
+                    MACAddr(self.base_MAC + int.to_bytes(x, 1, "big")),
+                )
         else:
             self.ifaces.extend(ifaces)
 
@@ -53,8 +55,8 @@ class Device:
         self.process_list: Dict[int, "Application"] = {}  # noqa: F821
         self.next_pid = 1
 
-    def add_iface(self, hwid: Optional[HWID] = None):
-        self.ifaces.append(Interface(hwid))
+    def add_iface(self, macaddr: Optional[MACAddr] = None):
+        self.ifaces.append(Interface(macaddr))
 
     def handle_connection_state_change(self, iface: Interface):
         pass
@@ -97,21 +99,21 @@ class Device:
     def process_payload(
         self,
         payload,
-        src: Optional[HWID] = None,
-        dst: Optional[HWID] = None,
+        src: Optional[MACAddr] = None,
+        dst: Optional[MACAddr] = None,
         iface: Optional[Interface] = None,
     ):
         logger.info(payload)
 
     def process_packet(self, packet: Packet, iface: Interface):
-        if packet.dst not in [iface.hwid, HWID.broadcast()]:
+        if packet.dst not in [iface.macaddr, MACAddr.broadcast()]:
             logger.info(
                 f"Ignoring packet from {packet.src} for {packet.dst} (not us!)",
             )
             return
         logger.info(
             "Received "
-            + ("broadcast" if packet.dst == HWID.broadcast() else "unicast")
+            + ("broadcast" if packet.dst == MACAddr.broadcast() else "unicast")
             + f" packet from {packet.src}",
         )
         self.process_payload(

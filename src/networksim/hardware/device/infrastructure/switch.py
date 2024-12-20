@@ -1,20 +1,25 @@
 from typing import List
 from typing import Optional
 
+from networksim.addr.macaddr import MACAddr
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
 from networksim.packet import Packet
 
 
 class CAMEntry:
-    def __init__(self, hwid: HWID, iface: Interface, expiration: int = 200):
-        self.hwid = hwid
+    def __init__(
+        self,
+        macaddr: MACAddr,
+        iface: Interface,
+        expiration: int = 200,
+    ):
+        self.macaddr = macaddr
         self.iface = iface
         self.expiration = expiration
 
     def __eq__(self, other):
-        return (self.hwid == other.hwid) and (self.iface == other.iface)
+        return (self.macaddr == other.macaddr) and (self.iface == other.iface)
 
 
 class CAMTable:
@@ -22,36 +27,40 @@ class CAMTable:
         self.table = {}
         self.expiration = expiration
 
-    def add_entry(self, hwid: HWID, iface: Interface):
-        entry = CAMEntry(hwid=hwid, iface=iface, expiration=self.expiration)
-        self.table[entry.hwid] = entry
+    def add_entry(self, macaddr: MACAddr, iface: Interface):
+        entry = CAMEntry(
+            macaddr=macaddr,
+            iface=iface,
+            expiration=self.expiration,
+        )
+        self.table[entry.macaddr] = entry
 
-    def get_iface(self, hwid: HWID) -> Interface:
-        if hwid not in self.table:
+    def get_iface(self, macaddr: MACAddr) -> Interface:
+        if macaddr not in self.table:
             return None
 
-        return self.table[hwid].iface
+        return self.table[macaddr].iface
 
-    def get_hwids_by_iface(self, iface: Interface) -> List[HWID]:
-        return [x.hwid for x in self.table.values() if x.iface == iface]
+    def get_macaddrs_by_iface(self, iface: Interface) -> List[MACAddr]:
+        return [x.macaddr for x in self.table.values() if x.iface == iface]
 
     def expire(self):
-        for hwid in list(self.table.keys()):
-            if hwid not in self.table:
+        for macaddr in list(self.table.keys()):
+            if macaddr not in self.table:
                 continue
-            self.table[hwid].expiration -= 1
-            if self.table[hwid].expiration <= 0:
-                self.delete_hwid(hwid)
+            self.table[macaddr].expiration -= 1
+            if self.table[macaddr].expiration <= 0:
+                self.delete_macaddr(macaddr)
 
-    def delete_hwid(self, hwid: HWID):
+    def delete_macaddr(self, macaddr: MACAddr):
         try:
-            del self.table[hwid]
+            del self.table[macaddr]
         except KeyError:
             pass
 
     def delete_port(self, iface: Interface):
-        for hwid in self.get_hwids_by_iface(iface):
-            self.delete_hwid(hwid)
+        for macaddr in self.get_macaddrs_by_iface(iface):
+            self.delete_macaddr(macaddr)
 
 
 class Switch(Device):
@@ -89,7 +98,7 @@ class Switch(Device):
 
         dst_iface = (
             None
-            if packet.dst == HWID.broadcast()
+            if packet.dst == MACAddr.broadcast()
             else self.CAM.get_iface(packet.dst)
         )
         if dst_iface is None:

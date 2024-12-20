@@ -2,9 +2,9 @@ import logging
 from typing import List
 from typing import Optional
 
+from networksim.addr.macaddr import MACAddr
 from networksim.hardware.device import Device
 from networksim.hardware.interface import Interface
-from networksim.hwid import HWID
 from networksim.stack.ipstack import IPStack
 
 
@@ -41,6 +41,12 @@ class IPDevice(Device):
         self.ip.addr_table.expire()
         super().run_jobs()
 
-    def process_payload(self, payload, src: HWID, dst: HWID, iface: Interface):
+    def process_payload(
+        self,
+        payload,
+        src: MACAddr,
+        dst: MACAddr,
+        iface: Interface,
+    ):
         if isinstance(payload, self.ip.supported_types):
             self.ip.process_packet(payload, src, dst, iface)

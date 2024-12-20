@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 from typing import Union
 
-from networksim.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPAddr
 from networksim.packet import Packet
 from networksim.packet.payload import Payload
 

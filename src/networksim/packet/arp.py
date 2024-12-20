@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from networksim.hwid import HWID
-from networksim.ipaddr import IPAddr
+from networksim.addr.ipaddr import IPAddr
+from networksim.addr.macaddr import MACAddr
 from networksim.packet import Packet
 
 
@@ -12,22 +12,22 @@ logger = logging.getLogger(__name__)
 class ARPPacket(Packet):
     def __init__(
         self,
-        dst: Optional[HWID] = None,
+        dst: Optional[MACAddr] = None,
         dst_ip: Optional[IPAddr] = None,
-        src: Optional[HWID] = None,
+        src: Optional[MACAddr] = None,
         src_ip: Optional[IPAddr] = None,
         request: bool = True,
     ):
-        if dst is not None and not isinstance(dst, HWID):
-            raise TypeError(f"dst: expected `HWID` got `{type(dst)}`")
+        if dst is not None and not isinstance(dst, MACAddr):
+            raise TypeError(f"dst: expected `MACAddr` got `{type(dst)}`")
         self.dst = dst
 
         if dst_ip is not None and not isinstance(dst_ip, IPAddr):
             raise TypeError(f"dst_ip: expected `IPAddr` got `{type(dst_ip)}`")
         self.dst_ip = dst_ip
 
-        if src is not None and not isinstance(src, HWID):
-            raise TypeError(f"src: expected `HWID` got `{type(src)}`")
+        if src is not None and not isinstance(src, MACAddr):
+            raise TypeError(f"src: expected `MACAddr` got `{type(src)}`")
         self.src = src
 
         if src_ip is not None and not isinstance(src_ip, IPAddr):

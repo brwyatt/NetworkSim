@@ -1,53 +1,18 @@
 import logging
 
+from networksim.addr import Addr
+
 
 logger = logging.getLogger(__name__)
 
 
-class IPAddr:
+class IPAddr(Addr):
     length_bytes = 4
-
-    def __init__(self, byte_value: bytes):
-        self.byte_value = byte_value
-
-    @classmethod
-    def broadcast(cls) -> bytes:
-        return cls(
-            byte_value=bytes(
-                [255 for _ in range(0, IPAddr.length_bytes)],
-            ),
-        )
-
-    @property
-    def byte_value(self) -> bytes:
-        return self._byte_value
-
-    @byte_value.setter
-    def byte_value(self, byte_value):
-        if (
-            type(byte_value) is not bytes
-            or len(byte_value) != self.length_bytes
-        ):
-            raise ValueError("Address is not bytes or wrong length!")
-
-        self._byte_value = byte_value
-
-    @classmethod
-    def from_str(cls, addr_str: str):
-        byte_value = bytes(
-            [int(x).to_bytes(1, "big")[0] for x in addr_str.split(".")],
-        )
-
-        return cls(byte_value)
+    separator = "."
+    base = 10
 
     def __str__(self) -> str:
-        return ".".join([str(x) for x in self.byte_value])
-
-    def __eq__(self, other) -> bool:
-        return self.byte_value == other.byte_value
-
-    def __hash__(self) -> int:
-        return int.from_bytes(self.byte_value, "big")
+        return self.separator.join([str(x) for x in self.byte_value])
 
 
 class IPNetwork:
