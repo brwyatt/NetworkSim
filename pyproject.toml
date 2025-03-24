@@ -37,7 +37,7 @@ classifiers = [
 
 # Dependencies
 dependencies = [
-    "setuptools>=50.0.0,<76.0.0",
+    "setuptools>=50.0.0,<79.0.0",
 ]
 
 [project.optional-dependencies]
@@ -74,7 +74,7 @@ Ping = "networksim.application.ping:Ping"
 
 [build-system]
 # These are the assumed build requirements if not specified
-requires = ["setuptools>=50.0.0,<76.0.0"]
+requires = ["setuptools>=50.0.0,<79.0.0"]
 build-backend = "setuptools.build_meta"  # Specifies the backend to use for building the distribution
 
 [tool.black]
