@@ -65,6 +65,7 @@ Device = "networksim.hardware.device:Device"
 "IPDevices.IPDevice" = "networksim.hardware.device.ip.ipdevice:IPDevice"
 "IPDevices.Router" = "networksim.hardware.device.ip.router:Router"
 "Infrastructure.Router" = "networksim.hardware.device.infrastructure.router:Router"
+"Infrastructure.Hub" = "networksim.hardware.device.infrastructure.hub:Hub"
 "Infrastructure.Switch" = "networksim.hardware.device.infrastructure.switch:Switch"
 
 [project.entry-points."networksim_applications"]
