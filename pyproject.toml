@@ -49,7 +49,7 @@ dev = [
 ]
 test = [
     "coverage>=7.6.9,<8.0.0",
-    "pytest>=8.3.4,<9.0.0",
+    "pytest>=8.3.4,<10.0.0",
 ]
 
 [project.urls]
